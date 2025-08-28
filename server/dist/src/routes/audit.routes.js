@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AuditRouter = void 0;
+const express_1 = require("express");
+const audit_controller_1 = require("../controller/audit.controller");
+exports.AuditRouter = (0, express_1.Router)();
+exports.AuditRouter.get('/', audit_controller_1.AuditController.list);
+exports.AuditRouter.get('/:id', audit_controller_1.AuditController.get);
+exports.AuditRouter.post('/', audit_controller_1.AuditController.create);
+exports.AuditRouter.put('/:id', audit_controller_1.AuditController.update);

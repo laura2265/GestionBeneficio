@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.pdfsRoutes = void 0;
+const express_1 = require("express");
+const pdfs_controller_1 = require("../controller/pdfs.controller");
+exports.pdfsRoutes = (0, express_1.Router)();
+exports.pdfsRoutes.get('/', pdfs_controller_1.PdfsController.list);
+exports.pdfsRoutes.get('/:id', pdfs_controller_1.PdfsController.get);
+exports.pdfsRoutes.post('/', pdfs_controller_1.PdfsController.create);
+exports.pdfsRoutes.put('/:id', pdfs_controller_1.PdfsController.update);
+exports.pdfsRoutes.put('/:id', pdfs_controller_1.PdfsController.remove);

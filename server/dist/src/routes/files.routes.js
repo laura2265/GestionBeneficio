@@ -1,0 +1,10 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.filesRouter = void 0;
+const express_1 = require("express");
+const files_controller_1 = require("../controller/files.controller");
+exports.filesRouter = (0, express_1.Router)();
+exports.filesRouter.get('/', files_controller_1.FilesController.list);
+exports.filesRouter.get('/:id', files_controller_1.FilesController.get);
+exports.filesRouter.post('/', files_controller_1.FilesController.create);
+exports.filesRouter.put('/:id', files_controller_1.FilesController.update);

@@ -1,0 +1,14 @@
+.Container1{
+    width: 50%;
+    text-align: center;
+}
+
+.ContainerForm{
+    display: flex;
+    width: 750px;
+}
+
+.Container2{
+    width: 50%;
+    text-align: center;
+}

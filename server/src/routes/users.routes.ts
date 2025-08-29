@@ -8,4 +8,3 @@ usersRouter.get('/:id', UsersController.get);
 usersRouter.post('/', UsersController.create);
 usersRouter.put('/:id', UsersController.update);
 usersRouter.put('/:id/deactivate', UsersController.deactivate);
-

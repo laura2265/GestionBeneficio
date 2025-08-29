@@ -127,7 +127,7 @@ model roles {
   user_roles  user_roles[]
 }
 
-model user_roles {
+model user_roles {  
   user_id     BigInt
   role_id     Int
   assigned_at DateTime @default(now()) @db.Timestamp(0)

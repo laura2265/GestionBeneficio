@@ -1,0 +1,84 @@
+*{
+  margin: 0;
+  padding: 0;
+  box-shadow: border-box;
+}
+
+body{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100vw;
+  height:  100vh;
+  font-family: Arial, sans-serif;
+}
+
+.FormLogin{
+  flex: 1;
+  width: 100%;
+  max-width: 350px;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.351);
+  margin-left: 20px;
+}
+h1{
+  margin-bottom: 31px;
+  text-align: center;
+}
+
+.inputContainer {
+  position: relative;
+  margin-top: 20px;
+}
+
+.inputContainerInput {
+  width: 312px;
+  color: #000;
+  padding: 10px;
+  border: 2px solid #9d9d9d;
+  border-radius: 4px;
+  outline: 2px solid rgb(119, 119, 119);
+  background-color: transparent;
+  transition: outline-color 500ms;
+}
+
+.inputContainerInput:is(:focus, :valid) {
+  outline-color: rgb(164, 164, 164);
+}
+
+.inputContainerLabel {
+  position: absolute;
+  top: -27px;
+  transform: translateY(30%);
+  padding: 0 5px;
+  font-size: 16px;
+  color: #868686;
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.inputContainerInput:focus + .inputContainerLabel,
+.inputContainerInput:valid + .inputContainerLabel {
+  padding-inline: 10px;
+  translate: 0px -15px;
+  scale: 0.8;
+  font-size: 20px;
+}
+
+.InputButton1 {
+  background: none;
+  border: 1px solid #000;
+  width: 100px;
+  height: 40px;
+  border-radius: 4px;
+  margin-top: 1px;
+  cursor: pointer;
+  transition: 0.3s;
+  margin-left: 120px;
+}
+
+.InputButton1:hover {
+  transform: scale(1.1);
+  background-color: rgb(203, 203, 203);
+}

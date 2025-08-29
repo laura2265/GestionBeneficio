@@ -11,18 +11,18 @@ import { historyRouter } from './routes/history.routes.js';
 import { AuditRouter } from './routes/audit.routes.js';
 import { estratoRouter } from './routes/estrato.routes.js';
 import { rolesRouter } from './routes/roles.routes.js';
+import { maybeAuth } from './middlewares/auth.js';
 
-// Routers
 
 const app = express();
-
-// Middlewares
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Health check
-app.get('/api/health', (_, res) => res.json({ ok: true }));
+// Ruta pública opcional
+app.get('/api/health', (_req, res) => res.json({ ok: true }));
+
+// 🔐 Aquí protegemos TODO lo que cuelga de /api:
+app.use('/api', maybeAuth);
 
 // Rutas de las diferentes tablas
 app.use('/api/users', usersRouter);

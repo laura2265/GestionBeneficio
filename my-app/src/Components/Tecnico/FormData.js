@@ -2,59 +2,49 @@ import './tecnico.css'
 
 function FormData(){
     return(
-        <>
-            <h1>Formulario de Datos</h1>
-            <form>
-                <div className='ContainerForm'>
-                    <div className="Container1">
-                        <div className="inputContainer">
-                            <label>Nombres Completos</label><br/>
-                            <input className="inputContainer" type="text" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Apellidos Completos</label><br/>
-                            <input className="inputContainer" type="text" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Tipo De Documento</label><br/>
-                            <select className="inputContainer">
-                                <option>-Selecciona una opcion-</option>
-                                <option>Cedula De Ciudadania</option>
-                                <option>Cedula Extrangera</option>
-                                <option>Pasaporte</option>
-                            </select><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Número De Documento</label><br/>
-                            <input className="inputContainer" type="number" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Dirección</label><br/> 
-                            <input className="inputContainer" type="text" /><br/><br/>
-                        </div>
-                    </div>
-
-                    <div className="Container2">
-                        <div className="inputContainer">
-                            <label>Barrio</label><br/>
-                            <input className="inputContainer" type="text" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Correo</label><br/>
-                            <input className="inputContainer" type="email" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Numero De Contacto</label><br/>
-                            <input className="inputContainer" type="number" /><br/><br/>
-                        </div>
-                        <div className="inputContainer">
-                            <label>Extracto</label><br/>
-                            <input className="inputContainer" type="text" /><br/><br/>
-                        </div>
-                    </div>
+       <>
+            <h1 className="titulo-form">Formulario de Datos</h1>
+            <form >
+              <div className="ContainerForm">
+                <div className="Container1">
+                  <div className="inputContainer">
+                    <label>Nombres Completos</label>
+                    <input type="text" name="nombres"/>
+                  </div>
+                  <div className="inputContainer">
+                    <label>Apellidos Completos</label>
+                    <input type="text" name="apellidos"  />
+                  </div>
+                  <div className="inputContainer">
+                    <label>Tipo de Documento</label>
+                    <select name="tipoDocumento" >
+                      <option>- Selecciona una opción -</option>
+                      <option>Cédula de Ciudadanía</option>
+                      <option>Cédula Extranjera</option>
+                      <option>Pasaporte</option>
+                    </select>
+                  </div>
                 </div>
+
+                <div className="Container2">
+                  <div className="inputContainer">
+                    <label>Número de Documento</label>
+                    <input type="number" name="documento" />
+                  </div>
+                  <div className="inputContainer">
+                    <label>Dirección</label>
+                    <input type="text" name="direccion"  />
+                  </div>
+                  <div className="inputContainer">
+                    <label>Correo</label>
+                    <input type="email" name="correo" />
+                  </div>
+                </div>
+              </div>
+              <button type="submit">ENVIAR</button>
             </form>
         </>
+
     )
 }
 

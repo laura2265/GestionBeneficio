@@ -2,7 +2,6 @@
 form {
   background: #fff; 
   font-family: 'Poppins', sans-serif;
-  width: 100%;
   max-width: 650px;
   padding: 40px;
   border-radius: 8px;
@@ -61,7 +60,7 @@ button {
   width: 100%;
   padding: 14px;
   background: #007bff;
-  color: white;
+  color: rgb(0, 0, 0);
   font-weight: bold;
   border: none;
   border-radius: 6px;

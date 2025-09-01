@@ -1,9 +1,11 @@
 import { prisma } from "../db.js";
 import { z } from "zod";
 export const userCreateSchema = z.object({
-    fullName: z.string().min(3),
+    full_name: z.string().min(3),
     email: z.string().email(),
     phone: z.string().optional(),
+    role_id: z.number().int().positive().optional(),
+    role_code: z.enum(["ADIM", "SUPERVISOR", "TECNICO"]).optional
 });
 export const userUpdateSchema = z.object({
     fullName: z.string().min(3).optional(),
@@ -37,20 +39,44 @@ export class UsersService {
             throw { status: 404, message: 'Usuario no encontrado' };
         return user;
     }
-    static async create(payload) {
-        const data = userCreateSchema.parse(payload);
-        return prisma.users.create({
-            data: {
-                fullName: data.fullName,
-                email: data.email,
-                phone: data.phone,
-                is_active: true
+    static async create(data) {
+        return prisma.$transaction(async (tx) => {
+            // 1) Crear usuario
+            const user = await tx.users.create({
+                data: {
+                    full_name: data.full_name,
+                    email: data.email,
+                    ...(data.phone ? { phone: data.phone } : {})
+                }
+            });
+            // 2) Resolver el role a asignar (por id, por code o default)
+            let roleIdToAssign = null;
+            if (data.role_id) {
+                roleIdToAssign = data.role_id;
             }
+            else if (data.role_code) {
+                const role = await tx.roles.findUnique({ where: { code: data.role_code } });
+                if (!role)
+                    throw new Error(`Rol no encontrado: ${data.role_code}`);
+                roleIdToAssign = role.id;
+            }
+            else {
+                // Rol por defecto si no envían nada (cámbialo si quieres)
+                const def = await tx.roles.findUnique({ where: { code: "TECNICO" } });
+                roleIdToAssign = def?.id ?? null;
+            }
+            // 3) Guardar en user_roles
+            if (roleIdToAssign) {
+                await tx.user_roles.create({
+                    data: { user_id: user.id, role_id: roleIdToAssign }
+                });
+            }
+            return user;
         });
     }
     static async update(id, payload) {
         const data = userUpdateSchema.parse(payload);
-        return prisma.user.update({
+        return prisma.users.update({
             where: { id },
             data: {
                 ...(data.fullName ? { fullName: data.fullName } : {}),

@@ -1,4 +1,16 @@
 import { UsersService } from "../services/users.service.js";
+function convertBigIntToString(obj) {
+    if (typeof obj === 'bigint') {
+        return obj.toString();
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(convertBigIntToString);
+    }
+    if (typeof obj === 'object' && obj !== null) {
+        return Object.fromEntries(Object.entries(obj).map(([key, value]) => [key, convertBigIntToString(value)]));
+    }
+    return obj;
+}
 export class UsersController {
     static async list(req, res, next) {
         try {
@@ -6,7 +18,11 @@ export class UsersController {
             const size = Number(req.query.size ?? 10);
             const onlyActive = (req.query.onlyActive ?? 'true') === 'true';
             const result = await UsersService.list({ page, size, onlyActive });
-            res.json(result);
+            // Verifica si result es un array antes de usar map
+            const resultWithStringIds = Array.isArray(result)
+                ? result.map((user) => convertBigIntToString(user))
+                : convertBigIntToString(result);
+            res.json(resultWithStringIds);
         }
         catch (err) {
             next(err);
@@ -16,7 +32,9 @@ export class UsersController {
         try {
             const id = Number(req.params.id);
             const result = await UsersService.get(id);
-            res.json(result);
+            // Convierte BigInt a string para todos los valores de result
+            const resultWithStringIds = convertBigIntToString(result);
+            res.json(resultWithStringIds);
         }
         catch (err) {
             next(err);
@@ -24,21 +42,27 @@ export class UsersController {
     }
     static async create(req, res, next) {
         try {
-            const result = await UsersService.create(req.body);
-            res.status(201).json(result);
+            const user = await UsersService.create(req.body);
+            const userResponse = convertBigIntToString({
+                user,
+                id: user.id.toString(),
+            });
+            res.json(userResponse);
         }
-        catch (err) {
-            next(err);
+        catch (error) {
+            next(error);
         }
     }
     static async update(req, res, next) {
         try {
             const id = Number(req.params.id);
             const result = await UsersService.update(id, req.body);
-            res.json(result);
+            const resultWithStringIds = convertBigIntToString(result);
+            res.json(resultWithStringIds);
         }
         catch (err) {
             next(err);
+            3;
         }
     }
     static async deactivate(req, res, next) {

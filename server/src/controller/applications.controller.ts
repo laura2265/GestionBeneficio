@@ -3,7 +3,8 @@ import { ApplicationsService } from "../services/applications.service.js";
 
 type AuthedRequest = Request & { auth?: { user?: { id?: number } } };
 
-const getUserId = (req: AuthedRequest): number => Number(req.auth?.user?.id ?? NaN);
+const getUserId = (req: AuthedRequest): number =>
+  Number(req.auth?.user?.id ?? req.header('x-user-id') ?? NaN);
 
 const getNumericParam = (value: unknown): number => {
   const n = Number(value);
@@ -39,18 +40,21 @@ static async list(req: AuthedRequest, res: Response, next: NextFunction) {
     }
   } 
 
-  // CREATE: solo TECNICO (el service valida el rol y marca tecnico_id + BORRADOR)
   static async create(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
       const userId = getUserId(req);
       if (Number.isNaN(userId)) return res.status(401).json({ message: "No autenticado" });
 
-      const app = await ApplicationsService.create(req.body, userId);
-      res.status(201).json(app);
+      const raw = { ...req.body };
+      if (raw.nombre && !raw.nombres) raw.nombres = raw.nombre;
+
+      const app = await ApplicationsService.create(raw, userId);
+      return res.status(201).json(app);
     } catch (err) {
       next(err);
     }
   }
+
 
   // UPDATE: (opcional) solo si permites editar BORRADOR del técnico dueño
   static async update(req: AuthedRequest, res: Response, next: NextFunction) {

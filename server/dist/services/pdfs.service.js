@@ -4,14 +4,16 @@ export class PdfsService {
     static async list({ appId }) {
         const where = {};
         if (appId)
-            where.application_id = appId;
-        return prisma.application_pdfs.findMany({ where, orderBy: [{ application_id: 'desc' }, { version: 'desc' }] });
+            where.application_id = BigInt(appId);
+        return prisma.application_pdfs.findMany({
+            where,
+            orderBy: [{ application_id: "desc" }, { version: "desc" }],
+        });
     }
     static async get(id) {
-        const item = await prisma.application_pdfs.findUnique({ where: { id } });
-        if (!item) {
-            throw { status: 404, message: 'PDF no encontrado ' };
-        }
+        const item = await prisma.application_pdfs.findUnique({ where: { id: BigInt(id) } });
+        if (!item)
+            throw { status: 404, message: "PDF no encontrado" };
         return item;
     }
     static async create(payload) {
@@ -20,9 +22,12 @@ export class PdfsService {
     }
     static async update(id, payload) {
         const data = pdfUpdateSchema.parse(payload);
-        return prisma.application_pdfs.update({ where: { id, data } });
+        return prisma.application_pdfs.update({
+            where: { id: BigInt(id) },
+            data,
+        });
     }
     static async remove(id) {
-        return prisma.application_pdfs.delete({ where: { id } });
+        return prisma.application_pdfs.delete({ where: { id: BigInt(id) } });
     }
 }

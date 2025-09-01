@@ -1,7 +1,9 @@
+// app.ts
 import 'dotenv/config';
 import express from 'express';
-import { errorHandler } from './middlewares/error-handler.js';
 import cors from 'cors';
+import { maybeAuth } from './middlewares/auth.js';
+
 import { usersRouter } from './routes/users.routes.js';
 import { ApplicationsRouter } from './routes/applications.routes.js';
 import { filesRouter } from './routes/files.routes.js';
@@ -11,20 +13,17 @@ import { historyRouter } from './routes/history.routes.js';
 import { AuditRouter } from './routes/audit.routes.js';
 import { estratoRouter } from './routes/estrato.routes.js';
 import { rolesRouter } from './routes/roles.routes.js';
-import { maybeAuth } from './middlewares/auth.js';
-
+import { errorHandler } from './middlewares/error-handler.js';
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Ruta pública opcional
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.use(maybeAuth);
 
-// 🔐 Aquí protegemos TODO lo que cuelga de /api:
-app.use('/api', maybeAuth);
-
-// Rutas de las diferentes tablas
+// Rutas
 app.use('/api/users', usersRouter);
 app.use('/api/applications', ApplicationsRouter);
 app.use('/api/files', filesRouter);
@@ -35,10 +34,8 @@ app.use('/api/audit', AuditRouter);
 app.use('/api/estrato', estratoRouter);
 app.use('/api/roles', rolesRouter);
 
-// Middleware de errores
+// Errores
 app.use(errorHandler);
 
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`✅ API escuchando en http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`✅ API escuchando en http://localhost:${port}`));

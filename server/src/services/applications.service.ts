@@ -5,17 +5,20 @@ import { PrismaClient } from "@prisma/client/extension";
 import { Prisma } from "@prisma/client";
 
 export const applicationCreateSchema = z.object({
-    nombres: z.string().min(2),
-    apellidos: z.string().min(2),
-    tipo_documento: z.enum(["CC", "CE", "PAS", "NIT", "OTRO"]),
-    numero_documento: z.string().min(3).max(50),
-    direccion: z.string().min(3).optional(),
-    barrio: z.string().min(2),
-    correo: z.string().email().optional(),
-    numero_contacto: z.string().optional(),
-    estrato_id: z.number().int().optional(),
-    declaracion_juramentada: z.boolean().default(false),
-})
+  nombres: z.string().min(2),
+  apellidos: z.string().min(2),
+  tipo_documento: z.enum(["CC", "CE", "PAS", "NIT", "OTRO"]),
+  numero_documento: z.string().min(3).max(50),
+  direccion: z.string().min(3).optional(),
+  barrio: z.string().min(2),
+  correo: z.string().email().optional(),
+  numero_contacto: z.string().optional(),
+  estrato_id: z.number().int().optional(),
+  declaracion_juramentada: z.boolean().default(false),
+  tecnico_id: z.number().int().optional(),
+  supervisor_id: z.number().int().optional()
+});
+
 
 export const applicationUpdateSchema =  applicationCreateSchema.partial();
 
@@ -80,40 +83,51 @@ export class ApplicationsService {
     }
 
     //Create tecnico y borrador
-    static async create(payload: unknown, currentUserId: number){
-        await ensureRole(currentUserId, "TECNICO");
-        const data = applicationCreateSchema.parse(payload);
+    static async create(payload: unknown, currentUserId: number) {
+      await ensureRole(currentUserId, "TECNICO");
+        
+      const data = applicationCreateSchema.parse(payload);
+        
+      const tecnicoId = data.tecnico_id ?? currentUserId;
+        
+      return prisma.$transaction(async (tx) => {
+        // 1. Crear la aplicación
+        const newApp = await prisma.applications.create({
+          data: {
+            nombres: data.nombres,
+            apellidos: data.apellidos,
+            tipo_documento: data.tipo_documento,
+            numero_documento: data.numero_documento,
+            direccion: data.direccion,
+            barrio: data.barrio,
+            correo: data.correo,
+            numero_contacto: data.numero_contacto,
+            estrato_id: data.estrato_id,
+            declaracion_juramentada: data.declaracion_juramentada,
+            estado: "BORRADOR",
+            tecnico_id: BigInt(tecnicoId)
+          }
+        });
+    
+        await tx.application_history.create({
+          data: {
+            application_id: newApp.id,
+            from_status: null,
+            to_status: "BORRADOR",
+            changed_by: tecnicoId,
+            comment: "Creación de la aplicación"
+          }
+        });
 
-        return prisma.$transaction(async(tx: PrismaClient)=>{
-            const app = await tx.applications.create({
-                data: {
-                    nombres: data.nombres,
-                    apellidos: data.apellidos,
-                    tipo_documento: data.tipo_documento as any,
-                    numero_documento: data.numero_documento,
-                    direccion: data.direccion ?? null,
-                    barrio: data.barrio,
-                    correo: data.correo ?? null,
-                    numero_contacto: data.numero_contacto,
-                    estrato_id: data.estrato_id ?? null,
-                    declaracion_juramentada: data.declaracion_juramentada,
-                    estado: "BORRADOR",
-                    tecnico_id: BigInt(currentUserId)
-                }
-            });
+        return {
+          ...newApp,
+          id: newApp.id.toString(),
+          tecnico_id: newApp.tecnico_id?.toString(),
+        };
 
-            await tx.application_history.create({
-                data:{
-                    application_id: app.id,
-                    from_status: null,
-                    to_status: "BORRADOR",
-                    change_by: BigInt(currentUserId),
-                    Comment: 'creación de la aplicación'
-                }
-            })
-            return app;
-        })
+      });
     }
+
 
     //Cambia estado de borrador a enviado
     static  async submit(appId: number, currentUserId: number){
@@ -159,6 +173,7 @@ export class ApplicationsService {
             if(!app){
                 throw {status: 404, message: "Aplicación no encontrada"};
             }
+
             if(app.estado !== "ENVIADA"){
                 throw {status: 400, message: "Solo se puede aprobar una aplicación Enviada"}
             }
@@ -178,6 +193,7 @@ export class ApplicationsService {
                 motivo_rechazo: null,
               },
             });
+            
 
             await tx.application_history.create({
                 data:{
@@ -205,6 +221,7 @@ export class ApplicationsService {
             if(!app){
                 throw {status: 404, message: "Aplicación no encontrada"}
             }
+
             if(app.estado === "ENVIADA"){
                 throw {status: 404, message: 'Solo puede rechazar una aplicación Enviada'}
             }

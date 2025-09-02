@@ -6,6 +6,20 @@ const getNumericParam = (value) => {
         throw { status: 400, message: "Parámetro numérico inválido" };
     return n;
 };
+// Convierte todos los BigInt a string de forma recursiva
+const sanitizeBigInt = (value) => {
+    if (typeof value === "bigint")
+        return value.toString();
+    if (Array.isArray(value))
+        return value.map(sanitizeBigInt);
+    if (value && typeof value === "object") {
+        const out = {};
+        for (const [k, v] of Object.entries(value))
+            out[k] = sanitizeBigInt(v);
+        return out;
+    }
+    return value;
+};
 export class ApplicationsController {
     static async list(req, res, next) {
         try {
@@ -16,7 +30,7 @@ export class ApplicationsController {
             const size = req.query.size ? getNumericParam(req.query.size) : 10;
             const estado = req.query.estado ?? undefined;
             const result = await ApplicationsService.list(userId, { page, size, estado });
-            res.json(result);
+            res.json(sanitizeBigInt(result));
         }
         catch (err) {
             next(err);
@@ -42,7 +56,7 @@ export class ApplicationsController {
             if (raw.nombre && !raw.nombres)
                 raw.nombres = raw.nombre;
             const app = await ApplicationsService.create(raw, userId);
-            return res.status(201).json(app);
+            return res.status(201).json(sanitizeBigInt(app));
         }
         catch (err) {
             next(err);

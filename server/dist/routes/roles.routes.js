@@ -12,7 +12,7 @@ rolesRouter.get('/', async (_req, res, next) => {
 });
 rolesRouter.get('/user/:userId/roleId', async (req, res, next) => {
     try {
-        res.json(await UserRoleService.listByUser(Number(req.params.userId)));
+        res.json(await UserRoleService.list(Number(req.params.userId)));
     }
     catch (err) {
         next(e);

@@ -1,6 +1,6 @@
 import { prisma } from "../db.js";
 export class UserRoleService {
-    static listByUser(userId) {
+    static list(userId) {
         return prisma.user_roles.findMany({
             where: { user_id: userId },
             include: {

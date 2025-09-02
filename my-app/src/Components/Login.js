@@ -21,14 +21,14 @@ function Login() {
     const validateFormLogin = async () => {
         let UserRol = '';
         let UserId = ''
-        let erros={}
+        let errors={}
 
         if(!formDataLogin.emailL){
-            erros.emailL = "El email es obligatorio"
+            errors.emailL = "El email es obligatorio"
         }
 
         if(! formDataLogin.passwordL){
-            erros.passwordL = "La contraseña es obligatoria"
+            errors.passwordL = "La contraseña es obligatoria"
         }
 
         try{
@@ -46,11 +46,47 @@ function Login() {
 
             let isValid = false;
             for(const item of data){
-                console.log(`datos: ${item.email}, contraseña: ${item}`)
+                console.log(`datos: ${item.email}, contraseña: ${item.password}`);
+
+                if(item.email === formDataLogin.emailL && item.password === formDataLogin.passwordL){
+                    const responseRole = await fetch('http://localhost:3000/api/user-role/', {
+                        method: 'GET',
+                        headers: {
+                            "x-user-id": item.id,
+                            "Content-Type": 'application/json'
+                        }
+                    })
+                    isValid = true;
+                    UserId = item.id;
+                }
+            }
+            if(!isValid){
+                const emailExist = data.some((item) => item.email === formDataLogin.emailL)
+                if(!emailExist){
+                    errors.emailL = 'El CORREO es incorrecto'
+                }else{
+                    errors.passwordL = 'La CONTRASEÑA es incorrecta'
+                }
             }
 
         }catch(error){
             console.error('Error al consultar los datos de la base de datos: ', error);
+        }
+        return { errors, UserRol, UserId};
+    }
+
+    const handleSubmitLogin = async(e)=>{
+        e.preventDefault();
+
+        const {errors, UserRol, UserId} = await validateFormLogin();
+        setFormErrorsLogin(errors);
+        setIsSubmitLogin(true);
+
+        if(Object.keys(errors).length === 0){
+            setIsSubmitLogin(true);
+            console.log('Redirigiendo según el rol del ususario ');
+            saveUserRol(UserRol);
+            saveUserId(UserId);
         }
     }
 

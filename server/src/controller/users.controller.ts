@@ -53,7 +53,6 @@ export class UsersController{
         }
     }
 
-
     static async create(req: Request, res: Response, next: NextFunction) {
       try {
         const user = await UsersService.create(req.body);

@@ -13,6 +13,7 @@ import { AuditRouter } from './routes/audit.routes.js';
 import { estratoRouter } from './routes/estrato.routes.js';
 import { rolesRouter } from './routes/roles.routes.js';
 import { errorHandler } from './middlewares/error-handler.js';
+import { UserRoleRouter } from './routes/user-role.routes.js';
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -28,6 +29,7 @@ app.use('/api/history', historyRouter);
 app.use('/api/audit', AuditRouter);
 app.use('/api/estrato', estratoRouter);
 app.use('/api/roles', rolesRouter);
+app.use('/api/user-role', UserRoleRouter);
 // Errores
 app.use(errorHandler);
 const port = process.env.PORT || 3000;

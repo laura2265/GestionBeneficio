@@ -9,5 +9,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src", "src/app.ts"]
+  "include": ["src", "src/app.ts", "generated", "generated"]
 }

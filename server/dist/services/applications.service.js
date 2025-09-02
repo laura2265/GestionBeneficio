@@ -17,7 +17,6 @@ export const applicationCreateSchema = z.object({
 });
 export const applicationUpdateSchema = applicationCreateSchema.partial();
 export class ApplicationsService {
-    // LIST con scope por rol
     static async list(currentUserId, { page = 1, size = 10, estado } = {}) {
         const skip = (page - 1) * size;
         const isSupervisor = await hasRole(currentUserId, "SUPERVISOR");
@@ -28,7 +27,7 @@ export class ApplicationsService {
             where.tecnico_id = BigInt(currentUserId);
         const [items, total] = await Promise.all([
             prisma.applications.findMany({ where, skip, take: size, orderBy: { id: "desc" } }),
-            prisma.applications.count({ where })
+            prisma.applications.count({ where }),
         ]);
         return { items, total, page, size };
     }
@@ -265,14 +264,11 @@ export class ApplicationsService {
         });
     }
     //validacion de los requisitos
-    static async isComplete(appId, tx) {
-        const db = tx ?? prisma;
+    static async isComplete(appId, db = prisma) {
         const required = await db.application_requirements.findMany({
-            where: { is_required: true },
+            where: {},
             select: { kind: true },
         });
-        if (required.length === 0)
-            return true;
         const files = await db.application_files.findMany({
             where: { application_id: BigInt(appId) },
             select: { kind: true },

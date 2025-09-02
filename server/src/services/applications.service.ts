@@ -1,8 +1,7 @@
 import { prisma } from "../db.js";
 import z from "zod";
 import { ensureRole, hasRole } from "./rbac.service.js";
-import { PrismaClient } from "@prisma/client/extension";
-import { Prisma } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 export const applicationCreateSchema = z.object({
   nombres: z.string().min(2),
@@ -24,25 +23,31 @@ export const applicationUpdateSchema =  applicationCreateSchema.partial();
 
 type Estado = "BORRADOR" | "ENVIADA" | "APROBADA" | "RECHAZADA"
 
-export class ApplicationsService {
+type ApplicationsWhere = Prisma.Args<typeof prisma.applications, 'findMany'>['where'];
+type DbClient = PrismaClient | Prisma.TransactionClient;
 
-    // LIST con scope por rol
+export class ApplicationsService {
+    
     static async list(
       currentUserId: number,
       { page = 1, size = 10, estado }: { page?: number; size?: number; estado?: "BORRADOR"|"ENVIADA"|"APROBADA"|"RECHAZADA" } = {}
     ) {
       const skip = (page - 1) * size;
       const isSupervisor = await hasRole(currentUserId, "SUPERVISOR");
-      const where: Prisma.applicationsWhereInput = {};
-      if (estado) where.estado = estado;
-      if (!isSupervisor) where.tecnico_id = BigInt(currentUserId); 
+    
+      const where: ApplicationsWhere = {};
+    
+      if (estado) where.estado = estado as any;
+      if (!isSupervisor) where.tecnico_id = BigInt(currentUserId);
     
       const [items, total] = await Promise.all([
         prisma.applications.findMany({ where, skip, take: size, orderBy: { id: "desc" } }),
-        prisma.applications.count({ where })
+        prisma.applications.count({ where }),
       ]);
+    
       return { items, total, page, size };
     }
+
      static async get(id:number){
         const item = await prisma.applications.findUnique({where: {id}});
         if(!item){
@@ -90,7 +95,7 @@ export class ApplicationsService {
         
       const tecnicoId = data.tecnico_id ?? currentUserId;
         
-      return prisma.$transaction(async (tx) => {
+      return prisma.$transaction(async (tx: Prisma.TransactionClient) => {
         // 1. Crear la aplicación
         const newApp = await prisma.applications.create({
           data: {
@@ -133,7 +138,7 @@ export class ApplicationsService {
     static  async submit(appId: number, currentUserId: number){
         await ensureRole(currentUserId, 'TECNICO');
 
-        return prisma.$transaction(async (tx)=>{
+        return prisma.$transaction(async (tx: Prisma.TransactionClient)=>{
             const app = await tx.applications.findUnique({where: {id: BigInt(appId)}});
             if(!app){
                 throw {status: 404, message: "Aplicación no encontrada"};
@@ -168,7 +173,7 @@ export class ApplicationsService {
     static async approve(appId: number, supervisorUserId: number, comment?: string){
         await ensureRole(supervisorUserId, "SUPERVISOR");
 
-        return prisma.$transaction(async (tx) =>{
+        return prisma.$transaction(async (tx: Prisma.TransactionClient) =>{
             const app = await tx.applications.findUnique({where: {id: BigInt(appId)}});
             if(!app){
                 throw {status: 404, message: "Aplicación no encontrada"};
@@ -216,7 +221,7 @@ export class ApplicationsService {
             throw {status: 400, message: "Motivo de rechazo requerido"};
         }
 
-        return prisma.$transaction(async(tx)=>{
+        return prisma.$transaction(async(tx: Prisma.TransactionClient)=>{
             const app = await tx.applications.findUnique({where: {id: BigInt(appId)}})
             if(!app){
                 throw {status: 404, message: "Aplicación no encontrada"}
@@ -296,7 +301,7 @@ export class ApplicationsService {
                 status: 400, message: 'No tienes permiso para adjuntar PDF a esta aplicación'
             }
         }
-        return await prisma.$transaction(async (tx)=>{
+        return await prisma.$transaction(async (tx: Prisma.TransactionClient)=>{
             const agg = await tx.application_pdfs.aggregate({
                 where: {application_id: BigInt(appId)},
                 _max: {
@@ -318,23 +323,24 @@ export class ApplicationsService {
     }
 
     //validacion de los requisitos
-    static async isComplete(appId: bigint | number, tx?: PrismaClient) {
-    const db = tx ?? prisma;
+    static async isComplete(
+      appId: number | bigint,
+      db: DbClient = prisma
+    ): Promise<boolean> {
+        type KindRec = { kind: string | number | bigint };
+        const required = await db.application_requirements.findMany({
+          where: {},
+          select: { kind: true } as const,
+        });
 
-    const required = await db.application_requirements.findMany({
-      where: { is_required: true },
-      select: { kind: true },
-    });
-    if (required.length === 0) return true;
+        const files = await db.application_files.findMany({
+          where: { application_id: BigInt(appId) },
+          select: { kind: true } as const,
+        });
 
-    const files = await db.application_files.findMany({
-      where: { application_id: BigInt(appId) },
-      select: { kind: true },
-    });
-
-    const have = new Set<string>(files.map((f: { kind: string }) => String(f.kind)));
-    return required.every((r: { kind: string }) => have.has(String(r.kind)));
-  }
+        const have = new Set(files.map((f: KindRec) => String(f.kind)));
+        return required.every((r: KindRec) => have.has(String(r.kind)));
+    }
 }
 
 

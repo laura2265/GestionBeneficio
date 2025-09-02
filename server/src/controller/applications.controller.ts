@@ -12,6 +12,19 @@ const getNumericParam = (value: unknown): number => {
   return n;
 };
 
+// Convierte todos los BigInt a string de forma recursiva
+const sanitizeBigInt = (value: any): any => {
+  if (typeof value === "bigint") return value.toString();
+  if (Array.isArray(value)) return value.map(sanitizeBigInt);
+  if (value && typeof value === "object") {
+    const out: Record<string, any> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = sanitizeBigInt(v);
+    return out;
+  }
+  return value;
+};
+
+
 export class ApplicationsController {
 static async list(req: AuthedRequest, res: Response, next: NextFunction) {
     try {
@@ -23,7 +36,7 @@ static async list(req: AuthedRequest, res: Response, next: NextFunction) {
       const estado = (req.query.estado as "BORRADOR" | "ENVIADA" | "APROBADA" | "RECHAZADA" | undefined) ?? undefined;
 
       const result = await ApplicationsService.list(userId, { page, size, estado });
-      res.json(result);
+      res.json(sanitizeBigInt(result));
     } catch (err) {
       next(err);
     }
@@ -49,7 +62,7 @@ static async list(req: AuthedRequest, res: Response, next: NextFunction) {
       if (raw.nombre && !raw.nombres) raw.nombres = raw.nombre;
 
       const app = await ApplicationsService.create(raw, userId);
-      return res.status(201).json(app);
+      return res.status(201).json(sanitizeBigInt(app));
     } catch (err) {
       next(err);
     }

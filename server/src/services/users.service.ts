@@ -55,14 +55,12 @@ export class UsersService{
     return prisma.$transaction(async (tx: PrismaClient) => {
       const email = data.email.trim().toLowerCase();
 
-      const hash = await argon2.hash(data.password, {type: argon2.argon2d})
-
       const user = await tx.users.create({
         data: {
           full_name: data.full_name,
           email,
           ...(data.phone ? { phone: data.phone } : {}),
-          password: hash,
+          password: data.password,
         },
         select: {
           id: true, full_name: true, email: true, phone: true,

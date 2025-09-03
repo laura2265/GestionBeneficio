@@ -29,7 +29,7 @@ body{
 
 .FormLogin .inputContainer {
   position: relative;
-  margin-top: 20px;
+  margin-top: 10px;
 }
 
 .FormLogin .inputContainerInput {
@@ -73,13 +73,23 @@ body{
   width: 100px;
   height: 40px;
   border-radius: 4px;
-  margin-top: 1px;
   cursor: pointer;
   transition: 0.3s;
-  margin-left: 120px;
+  margin-left: 90px;
 }
 
 .FormLogin .InputButton1:hover {
   transform: scale(1.1);
   background-color: rgb(203, 203, 203);
+}
+
+/*Error de datos */
+.error {
+  margin-top: -12px;
+  margin-bottom: 32px;
+  margin-left: 12px;
+  color: tomato;
+  font-size: 12px;
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 
+               'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
 }

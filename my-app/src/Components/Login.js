@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+
 function Login() {
-    
     const navigate = useNavigate();
 
     const [formDataLogin, setFormDataLogin]= useState({
@@ -13,95 +13,113 @@ function Login() {
     const [ formErrorsLogin, setFormErrorsLogin ] = useState({});
     const [ isSubmitLogin, setIsSubmitLogin] = useState(false);
 
-    const handleInputChangeLogin = (e)=>{
-        const { name, value } = e.target;
-        setFormDataLogin({...formDataLogin, [name]: value})
-    }
+    const handleInputChangeLogin = (e) => {
+      const { name, value } = e.target;
+      setFormDataLogin({ ...formDataLogin, [name]: value });
+    };
 
     const validateFormLogin = async () => {
-        let UserRol = '';
-        let UserId = ''
-        let errors={}
+      let errors = {};
+      let UserRol = '';
+      let UserId  = '';
 
-        if(!formDataLogin.emailL){
-            errors.emailL = "El email es obligatorio"
+      if (!formDataLogin.emailL)  errors.emailL = 'El email es obligatorio';
+      if (!formDataLogin.passwordL) errors.passwordL = 'La contraseña es obligatoria';
+      if (Object.keys(errors).length) return { errors, UserRol, UserId };
+
+      try {
+        // 1) Traer usuarios
+        const resUsers = await fetch('http://localhost:3000/api/users/', { method: 'GET' });
+        if (!resUsers.ok) throw new Error('Error al traer los usuarios');
+        const { items = [] } = await resUsers.json();
+
+        // 2) Buscar usuario
+        const user = items.find(u => u.email === formDataLogin.emailL && u.password === formDataLogin.passwordL);
+
+        if (!user) {
+          const emailExist = items.some(u => u.email === formDataLogin.emailL);
+          if (!emailExist) errors.emailL = 'El CORREO es incorrecto';
+          else errors.passwordL = 'La CONTRASEÑA es incorrecta';
+          return { errors, UserRol, UserId };
         }
 
-        if(! formDataLogin.passwordL){
-            errors.passwordL = "La contraseña es obligatoria"
+        // 3) Consultar rol por user.id
+        const resRole = await fetch('http://localhost:3000/api/user-role/', {
+          method: 'GET',
+          headers: { 'x-user-id': String(user.id) }
+        });
+        if (!resRole.ok) throw new Error('Error al consultar el rol del usuario');
+        const roleJson = await resRole.json();
+
+        // Tu API devuelve array; toma roles.id (o role_id de fallback)
+        const roleId = roleJson?.[0]?.roles?.id ?? roleJson?.[0]?.role_id ?? null;
+        if (roleId == null) throw new Error('Respuesta de rol inválida');
+
+        UserId  = user.id;
+        UserRol = roleId;
+
+        return { errors: {}, UserRol, UserId };
+      } catch (err) {
+        console.error('validateFormLogin error:', err);
+        errors.general = err.message || 'Ocurrió un error inesperado';
+        return { errors, UserRol, UserId };
+      }
+    };
+
+
+    const handleSubmitLogin = async (e) => {
+      e.preventDefault();
+      const { errors, UserRol, UserId } = await validateFormLogin();
+        
+      setFormErrorsLogin(errors);
+      setIsSubmitLogin(true);
+        
+      if (Object.keys(errors).length === 0) {
+        // Si usas helpers:
+        // saveUserRol(UserRol); 
+        // saveUserId(UserId);
+    
+        switch (parseInt(UserRol)) {
+          case 1: navigate('/admin'); break;
+          case 2: navigate('/supervisor'); break;
+          case 3: navigate('/tecnico'); break;
+          default: console.log('Rol del usuario no reconocido'); break;
         }
+        localStorage.setItem('auth', JSON.stringify({
+          userId: UserId,
+          roleId: UserRol,     
+          loggedAt: Date.now() 
+        }));
+      }
+    };
 
-        try{
-            const response = await fetch(`http://localhost:3000/api/users/`,{
-                method: 'GET'
-            })
-
-            if(!response.ok){
-                throw new Error(`Error al traer los datos de la base de datos`)
-            }
-
-            const result = await response.json();
-            const data = result.items
-            console.log('Los datos de la base de datos son: ', data);
-
-            let isValid = false;
-            for(const item of data){
-                console.log(`datos: ${item.email}, contraseña: ${item.password}`);
-
-                if(item.email === formDataLogin.emailL && item.password === formDataLogin.passwordL){
-                    const responseRole = await fetch('http://localhost:3000/api/user-role/', {
-                        method: 'GET',
-                        headers: {
-                            "x-user-id": item.id,
-                            "Content-Type": 'application/json'
-                        }
-                    })
-                    isValid = true;
-                    UserId = item.id;
-                }
-            }
-            if(!isValid){
-                const emailExist = data.some((item) => item.email === formDataLogin.emailL)
-                if(!emailExist){
-                    errors.emailL = 'El CORREO es incorrecto'
-                }else{
-                    errors.passwordL = 'La CONTRASEÑA es incorrecta'
-                }
-            }
-
-        }catch(error){
-            console.error('Error al consultar los datos de la base de datos: ', error);
-        }
-        return { errors, UserRol, UserId};
-    }
-
-    const handleSubmitLogin = async(e)=>{
-        e.preventDefault();
-
-        const {errors, UserRol, UserId} = await validateFormLogin();
-        setFormErrorsLogin(errors);
-        setIsSubmitLogin(true);
-
-        if(Object.keys(errors).length === 0){
-            setIsSubmitLogin(true);
-            console.log('Redirigiendo según el rol del ususario ');
-            saveUserRol(UserRol);
-            saveUserId(UserId);
-        }
-    }
 
     return(
         <>
             <div className="FormLogin">
                 <h1>Iniciar Sesion </h1>
-                <form>
+                <form onSubmit={handleSubmitLogin}>
                     <div className="inputContainer">
-                        <input className="inputContainerInput" type="text" /><br/><br/>
-                        <label className="inputContainerLabel">Usuario</label><br/>
+                        <input
+                        type = "text"
+                        name='emailL'
+                        className="inputContainerInput"
+                        value={formDataLogin.emailL} 
+                        onChange={handleInputChangeLogin}
+                        /><br/><br/>
+                        <label className="inputContainerLabel">Usuario</label>
+                        { formErrorsLogin.emailL && <p className='error'>{formErrorsLogin.emailL}</p>}
                     </div>
                     <div className="inputContainer">
-                        <input type="password" className="inputContainerInput" /><br/><br/>
-                        <label className="inputContainerLabel">Contraseña</label><br/>
+                        <input 
+                        type="password" 
+                        name='passwordL'
+                        className="inputContainerInput"
+                        value={formDataLogin.passwordL}
+                        onChange={handleInputChangeLogin}
+                        /><br/><br/>
+                        <label className="inputContainerLabel">Contraseña</label>
+                        { formErrorsLogin.passwordL && <p className='error'>{formErrorsLogin.passwordL}</p>}
                     </div>
                     <button type="submit" className="InputButton1">Ingresar</button>
                 </form>

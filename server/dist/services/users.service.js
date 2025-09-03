@@ -1,6 +1,5 @@
 import { prisma } from "../db.js";
 import { z } from "zod";
-import argon2 from "argon2";
 export const userCreateSchema = z.object({
     full_name: z.string().min(3),
     email: z.string().email(),
@@ -44,13 +43,12 @@ export class UsersService {
     static async create(data) {
         return prisma.$transaction(async (tx) => {
             const email = data.email.trim().toLowerCase();
-            const hash = await argon2.hash(data.password, { type: argon2.argon2d });
             const user = await tx.users.create({
                 data: {
                     full_name: data.full_name,
                     email,
                     ...(data.phone ? { phone: data.phone } : {}),
-                    password: hash,
+                    password: data.password,
                 },
                 select: {
                     id: true, full_name: true, email: true, phone: true,

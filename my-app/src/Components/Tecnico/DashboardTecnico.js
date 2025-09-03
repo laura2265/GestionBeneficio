@@ -1,29 +1,41 @@
+// DashboardTecnico.js
 import { useState } from 'react';
-import './tecnico.css'
+import './tecnico.css';
 import FormData from './FormData';
+import UploadDocs from './UploadDocs'; // ⬅️ importa el componente
 
-function DashboardTecnico(){
-   const [borradores, setBorradores] = useState([
+function DashboardTecnico() {
+  const [borradores, setBorradores] = useState([
     { id: 1, nombre: "Cambio de Router", fecha: "2025-08-28" },
     { id: 2, nombre: "Revisión de Red", fecha: "2025-08-29" },
   ]);
 
-  const [modo, setModo] = useState("panel"); // "panel" o "formulario"
+  // "panel" | "formulario" | "adjuntos"
+  const [modo, setModo] = useState("panel");
   const [borradorEditando, setBorradorEditando] = useState(null);
+  const [draftId, setDraftId] = useState(null); // ⬅️ aquí guardamos el id del borrador
 
   const nuevaSolicitud = () => {
     setBorradorEditando(null);
+    setDraftId(null);
     setModo("formulario");
   };
 
   const editarBorrador = (borrador) => {
     setBorradorEditando(borrador);
-    setModo("formulario");
+    setDraftId(borrador.id);
+    setModo("adjuntos"); // ir directo a adjuntos si ya existe
+  };
+
+  // ⬅️ recibe el id del borrador desde FormData y cambia a adjuntos
+  const handleDraftSaved = (id) => {
+    setDraftId(id);
+    setModo("adjuntos");
   };
 
   return (
     <div className="tecnico-container">
-      {modo === "panel" ? (
+      {modo === "panel" && (
         <>
           <header className="tecnico-header">
             <h1>Panel del Técnico</h1>
@@ -41,11 +53,8 @@ function DashboardTecnico(){
                     <div>
                       <strong>{item.nombre}</strong> - {item.fecha}
                     </div>
-                    <button
-                      className="btn-editar"
-                      onClick={() => editarBorrador(item)}
-                    >
-                      Editar
+                    <button className="btn-editar" onClick={() => editarBorrador(item)}>
+                      Continuar
                     </button>
                   </li>
                 ))}
@@ -55,8 +64,22 @@ function DashboardTecnico(){
             )}
           </div>
         </>
-      ) : (
-        <FormData borrador={borradorEditando} volver={() => setModo("panel")} />
+      )}
+
+      {modo === "formulario" && (
+        <FormData
+          borrador={borradorEditando}
+          volver={() => setModo("panel")}
+          onDraftSaved={handleDraftSaved}  // ⬅️ al guardar, pasas a UploadDocs
+        />
+      )}
+
+      {modo === "adjuntos" && draftId && (
+        <UploadDocs
+          applicationId={draftId}
+          volver={() => setModo("panel")}
+          onSubmitted={() => { setDraftId(null); setModo("panel"); }}
+        />
       )}
     </div>
   );

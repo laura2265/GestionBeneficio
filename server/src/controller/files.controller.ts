@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { FilesService } from "../services/files.service.js";
 
 export class FilesController{
+
     static async list(req:Request, res:Response, next: NextFunction){
         try{
             res.json(await FilesService.list({appId: req.query.appId ? Number(req.query.appId): undefined}))

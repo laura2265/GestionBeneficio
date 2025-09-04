@@ -125,14 +125,25 @@ export class ApplicationsService {
                 where: { id: app.id },
                 data: { estado: "ENVIADA", enviada_at: new Date() },
             });
-            await tx.application_history.create({
+            const complete = await ApplicationsService.isComplete(app.id, tx);
+            if (!complete) {
+                throw { status: 400, message: 'Faltan documentos requeridos' };
+            }
+            const supervisors = await tx.user_roles.findMany({
+                where: { roles: { is: { code: 'SUPERVISOR' } } },
+                select: { user_id: true },
+            });
+            if (!supervisors.length) {
+                throw { status: 409, message: 'No hay supervisores disponibles' };
+            }
+            const pick = supervisors[Math.floor(Math.random() * supervisors.length)].user_id;
+            await tx.applications.update({
+                where: { id: app.id },
                 data: {
-                    application_id: app.id,
-                    from_status: "BORRADOR",
-                    to_status: "ENVIADA",
-                    changed_by: BigInt(currentUserId),
-                    comment: "Envío para revisión"
-                }
+                    estado: 'ENVIADA',
+                    enviada_at: new Date(),
+                    supervisor_id: pick,
+                },
             });
             return updated;
         });
@@ -212,15 +223,13 @@ export class ApplicationsService {
     }
     //Adjuntar PDF
     static async addFile(appId, currentUserId, file) {
-        const isSupervisor = await hasRole(currentUserId, "SUPERVISOR");
-        const app = await prisma.applications.findUnique({
-            where: { id: BigInt(appId) }
-        });
-        if (!app) {
-            throw { status: 400, message: "Aplicación no encontrada" };
-        }
-        if (isSupervisor && app.tecnico_id !== BigInt(currentUserId)) {
-            throw { status: 404, message: "No tienes permiso para adjuntar archivos a esta aplicación " };
+        const isSupervisor = await hasRole(currentUserId, 'TECNICO');
+        const app = await prisma.applications.findUnique({ where: { id: BigInt(appId) } });
+        if (!app)
+            throw { status: 400, message: 'Aplicación no encontrada' };
+        // Regla recomendada: el TÉCNICO dueño puede adjuntar; el supervisor NO (o cámbialo a gusto)
+        if (!isSupervisor && app.tecnico_id !== BigInt(currentUserId)) {
+            throw { status: 403, message: 'No puedes adjuntar archivos a esta aplicación' };
         }
         return prisma.application_files.create({
             data: {

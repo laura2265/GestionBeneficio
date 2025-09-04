@@ -14,11 +14,22 @@ import { estratoRouter } from './routes/estrato.routes.js';
 import { rolesRouter } from './routes/roles.routes.js';
 import { errorHandler } from './middlewares/error-handler.js';
 import { UserRoleRouter } from './routes/user-role.routes.js';
+import path from 'path';
 const app = express();
+// app.ts
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(maybeAuth);
+BigInt.prototype.toJSON = function () {
+    return this.toString();
+};
+const UPLOAD_DIR = path.resolve("uploads");
+// Servir archivos subidos en /uploads/<filename>
+app.use("/uploads", express.static(UPLOAD_DIR, {
+    index: false,
+    maxAge: "7d",
+}));
 // Rutas
 app.use('/api/users', usersRouter);
 app.use('/api/applications', ApplicationsRouter);

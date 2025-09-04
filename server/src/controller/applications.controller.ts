@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import { ApplicationsService } from "../services/applications.service.js";
+import { FileKind, normalizeKind } from "../domain/file_kind.js";
 
+function jsonSafe<T>(data: T): T {
+  return JSON.parse(JSON.stringify(data, (_k, v) => (typeof v === "bigint" ? v.toString() : v)));
+}
 type AuthedRequest = Request & { auth?: { user?: { id?: number } } };
 
 const getUserId = (req: AuthedRequest): number =>
@@ -23,7 +27,6 @@ const sanitizeBigInt = (value: any): any => {
   }
   return value;
 };
-
 
 export class ApplicationsController {
 static async list(req: AuthedRequest, res: Response, next: NextFunction) {
@@ -127,30 +130,80 @@ static async list(req: AuthedRequest, res: Response, next: NextFunction) {
     }
   }
 
-  // ADD FILE: técnico dueño o supervisor puede adjuntar por requirement/kind
-  static async addFile(req: AuthedRequest, res: Response, next: NextFunction) {
-    try {
-      const id = getNumericParam(req.params.id);
-      const userId = getUserId(req);
-      if (Number.isNaN(userId)) return res.status(401).json({ message: "No autenticado" });
+  static async addFile(req: Request, res: Response, next: NextFunction) {
+  try {
+    console.log('Content-Type:', req.headers['content-type']);
+    console.log('req.body:', req.body);
+    console.log('req.file:', req.file);
 
-      const { kind, file_name, storage_path, mime_type } = req.body as {
-        kind: string;
-        file_name: string;
-        storage_path: string;
-        mime_type?: string | null;
-      };
+    const appId = Number(req.params.id);
+    const userId = Number(req.headers["x-user-id"]);
 
-      const result = await ApplicationsService.addFile(id, userId, {
-        kind: kind as any,
-        file_name,
-        storage_path,
-        mime_type: mime_type ?? null,
-      });
-      res.status(201).json(result);
-    } catch (err) {
-      next(err);
+    if (!req.file) return res.status(400).json({ message: "Falta 'file'" });
+
+    const bodyKind = (req.body?.kind ?? "").toString().replace(/"/g, "");
+    const kind: FileKind = normalizeKind(bodyKind);
+
+    const storedName = req.file.filename;                // p.ej. '1757..._archivo.png'
+    const file_name  = req.file.originalname;            // nombre original para mostrar
+    const mime_type  = req.file.mimetype;
+
+    const storage_path = `/uploads/${storedName}`;
+
+     // 1) Guardar el archivo en BD
+    const saved = await ApplicationsService.addFile(appId, userId, {
+      kind: kind as any,
+      file_name,
+      storage_path,
+      mime_type,
+    });
+
+    // 2) Si piden enviar al guardar, intentamos submit
+    const autoSubmit = (req.body?.auto_submit ?? "false").toString().toLowerCase() === "true";
+
+    if (!autoSubmit) {
+      return res.status(201).json({ file: jsonSafe(saved), submitted: false });
     }
+
+    try {
+      const submittedApp = await ApplicationsService.submit(appId, userId);
+      // Si tu submit cambia estado a 'ENVIADA' y hace validaciones internas, perfecto
+      return res
+        .status(200)
+        .json({ file: jsonSafe(saved), submitted: true, application: jsonSafe(submittedApp) });
+    } catch (e: any) {
+      // Si aún faltan requisitos, devolvemos 201 con info del archivo y el motivo
+      return res.status(201).json({
+        file: jsonSafe(saved),
+        submitted: false,
+        submit_error: e?.message || "No se pudo enviar la solicitud",
+      });
+    }
+  } catch (err) {
+    next(err);
+  }
+}
+
+
+  static async addFilesBatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const appId = Number(req.params.id);
+      const userId = Number(req.headers["x-user-id"]);
+      const entries = Object.entries(req.files as Record<string, Express.Multer.File[]>);
+
+      const saves = await Promise.all(entries.map(async ([k, arr]) => {
+        const f = arr[0];
+        const kind = normalizeKind(k);
+        return ApplicationsService.addFile(appId, userId, {
+          kind,
+          file_name: f.originalname,
+          storage_path: f.path.replace(/\\/g, "/"),
+          mime_type: f.mimetype,
+        });
+      }));
+
+      res.status(201).json({ uploaded: saves.length, items: saves });
+    } catch (e) { next(e); }
   }
 
   // ADD PDF versionado: técnico dueño o supervisor

@@ -32,7 +32,7 @@ export class FilesController {
             next(err);
         }
     }
-    static async remove(res, req, next) {
+    static async remove(req, res, next) {
         try {
             res.json(await FilesService.remove(Number(req.params.id)));
         }

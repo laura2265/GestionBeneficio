@@ -1,5 +1,5 @@
 // UploadDocs.jsx
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 /** Requisitos fijos basados en tu tabla */
 const FIXED_REQUIREMENTS = [
@@ -23,128 +23,62 @@ const KIND_ACCEPT = {
   DECLARACION_JURAMENTADA: "application/pdf",
 };
 
-/** Normaliza la lista de archivos que devuelve tu backend a un formato estándar */
-function normalizeFiles(payload) {
-  const list = Array.isArray(payload) ? payload : (payload?.files || payload?.data || []);
-  return (list || []).map((f, i) => ({
-    id: f.id ?? f.fileId ?? f.uuid ?? `${i}`,
-    kind: f.kind ?? f.doc_kind ?? f.type ?? f.category ?? "",
-    name: f.fileName ?? f.filename ?? f.name ?? `archivo_${i}`,
-    url: f.url ?? f.path ?? null,
-  }));
-}
+const API_BASE = import.meta?.env?.VITE_API_BASE || "http://localhost:3000";
 
-export default function UploadDocs({ applicationId, volver, onSubmitted }) {
-  const [selected, setSelected] = useState({});  // { kind: File }
-  const [uploaded, setUploaded] = useState([]);  // [{id, kind, name, url?}]
+export default function UploadDocs({ applicationId, onSubmitted, volver }) {
+  const [selected, setSelected] = useState({}); // { kind: File }
+  const [uploadedKinds, setUploadedKinds] = useState(new Set()); // para marcar cuáles ya están
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
 
-  // Saco el técnico del localStorage como en tu FormData
+  // usuario (cabecera x-user-id)
   const auth = JSON.parse(localStorage.getItem("auth") || "{}");
-  const tecnicoId = Number(auth?.userId);
+  const tecnicoId = Number(auth?.userId || auth?.id || 0);
 
-  // Orden: requeridos primero
-  const requirements = useMemo(
-    () => [...FIXED_REQUIREMENTS].sort((a, b) => (b.required ? 1 : 0) - (a.required ? 1 : 0)),
+  const requiredKinds = useMemo(
+    () => FIXED_REQUIREMENTS.filter((r) => r.required).map((r) => r.kind),
     []
   );
 
-  /** ----------- LISTAR EXISTENTES (POST) ----------- */
-  const fetchExistingFiles = async () => {
-    // 1) Intento POST con JSON (algunas APIs lo piden)
-    let res, data;
-    try {
-      res = await fetch(
-        `http://localhost:3000/api/applications/${applicationId}/files`,
-        {
-          method: "POST",
-          headers: {
-            "x-user-id": tecnicoId,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: "LIST" }),
-        }
-      );
-      data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setUploaded(normalizeFiles(data));
-        return;
-      }
-    } catch {
-      /* seguimos al fallback */
-    }
-    // 2) Fallback: POST sin body (por si tu ruta no espera JSON)
-    try {
-      res = await fetch(
-        `http://localhost:3000/api/applications/${applicationId}/files`,
-        {
-          method: "POST",
-          headers: { "x-user-id": tecnicoId },
-        }
-      );
-      data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setUploaded(normalizeFiles(data));
-        return;
-      }
-      throw new Error(data?.message || "No se pudo cargar los archivos");
-    } catch (e) {
-      setMsg(e.message || "Error al listar archivos");
-    }
-  };
+  const allKinds = useMemo(() => FIXED_REQUIREMENTS.map((r) => r.kind), []);
 
-  useEffect(() => {
-    fetchExistingFiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [applicationId]);
-
-  /** ----------- SELECCIÓN ----------- */
   const handleChange = (kind, file) => {
     setSelected((s) => ({ ...s, [kind]: file }));
   };
 
-  /** ----------- SUBIR UNO (POST FormData) ----------- */
-  const uploadOne = async (kind, file) => {
+  /** Subir un archivo. Si autoSubmit=true, el backend hará submit tras guardar */
+  const uploadOne = async (kind, file, { autoSubmit = false } = {}) => {
     const fd = new FormData();
     fd.append("file", file);
-    fd.append("kind", kind);                // <- para que el backend sepa qué es
-    fd.append("applicationId", String(applicationId)); // <- por si tu backend lo usa
+    fd.append("kind", kind);
+    fd.append("file_name", file?.name || `${kind}.dat`);
+    if (autoSubmit) fd.append("auto_submit", "true");
 
-    const res = await fetch(
-      `http://localhost:3000/api/applications/${applicationId}/files`,
-      {
-        method: "POST",
-        headers: { "x-user-id": tecnicoId }, // NO pongas Content-Type con FormData
-        body: fd,
-      }
-    );
+    const res = await fetch(`${API_BASE}/api/applications/${applicationId}/files`, {
+      method: "POST",
+      headers: { "x-user-id": String(tecnicoId) },
+      body: fd,
+    });
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.message || `No se pudo subir ${kind}`);
+    // Marcamos como cargado
+    setUploadedKinds((prev) => new Set(prev).add(kind));
     return data;
   };
 
-  /** ----------- SUBIR TODOS ----------- */
+  /** Sube lo seleccionado sin enviar */
   const uploadAll = async () => {
     setMsg("");
     setLoading(true);
     try {
-      // Validar requeridos (ya subidos o seleccionados)
-      const missing = requirements.filter(
-        (r) => r.required && !selected[r.kind] && !uploaded.find((u) => u.kind === r.kind)
-      );
-      if (missing.length) {
-        throw new Error(`Faltan: ${missing.map((m) => m.label).join(", ")}`);
-      }
+      // Validar que al menos uno
+      const toUpload = Object.entries(selected).filter(([, f]) => !!f);
+      if (!toUpload.length) throw new Error("Selecciona al menos un archivo");
 
-      // Subir lo que el usuario eligió ahora
-      for (const r of requirements) {
-        const f = selected[r.kind];
-        if (f) await uploadOne(r.kind, f);
+      for (const [kind, file] of toUpload) {
+        await uploadOne(kind, file);
       }
-
-      await fetchExistingFiles();
       setSelected({});
       setMsg("Adjuntos cargados correctamente.");
     } catch (e) {
@@ -154,92 +88,116 @@ export default function UploadDocs({ applicationId, volver, onSubmitted }) {
     }
   };
 
-  /** ----------- ENVIAR SOLICITUD ----------- */
-  const enviarSolicitud = async () => {
+  /** Subir lo necesario y ENVIAR */
+  const submitApp = async () => {
+    const res = await fetch(`${API_BASE}/api/applications/${applicationId}/submit`, {
+      method: "POST",
+      headers: { "x-user-id": String(tecnicoId), "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || "No se pudo enviar la solicitud");
+    return data;
+  };
+
+  const uploadAndSubmit = async () => {
     setMsg("");
     setLoading(true);
     try {
-      // Revalidar requeridos contra lo ya subido
-      const missing = requirements.filter(
-        (r) => r.required && !uploaded.find((u) => u.kind === r.kind)
+      // ¿Cuáles requeridos faltan si consideramos lo ya subido + lo seleccionado?
+      const missingNow = requiredKinds.filter(
+        (rk) => !uploadedKinds.has(rk) && !selected[rk]
       );
-      if (missing.length) {
-        throw new Error(`Aún faltan: ${missing.map((m) => m.label).join(", ")}`);
+      if (missingNow.length) {
+        const labels = FIXED_REQUIREMENTS.filter((r) => missingNow.includes(r.kind))
+          .map((r) => r.label)
+          .join(", ");
+        throw new Error(`Faltan requeridos: ${labels}`);
       }
 
-      const res = await fetch(
-        `http://localhost:3000/api/applications/${applicationId}/submit`,
-        {
-          method: "POST",
-          headers: {
-            "x-user-id": tecnicoId,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({}), // si tu endpoint no requiere body, puedes quitarlo
-        }
-      );
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "No se pudo enviar la solicitud");
+      // Si ya estaban todos cargados y no seleccionaste nada ahora → sólo enviar
+      const selectedEntries = Object.entries(selected).filter(([, f]) => !!f);
+      if (!selectedEntries.length) {
+        await submitApp();
+        setMsg("Solicitud enviada correctamente.");
+        onSubmitted?.();
+        return;
+      }
 
-      setMsg("Solicitud enviada al supervisor asignado.");
+      for (const [kind, file] of selectedEntries) {
+        await uploadOne(kind, file);
+      }
+
+      await submitApp();
+
+      setSelected({});
+      setMsg("Documentos subidos y solicitud enviada.");
       onSubmitted?.();
     } catch (e) {
-      setMsg(e.message || "Error al enviar la solicitud");
+      setMsg(e.message || "Error al subir/enviar");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div>
-      <h2>Adjuntar Documentos — Solicitud #{applicationId}</h2>
+    <div className="p-4 max-w-2xl">
+      <h2 className="text-xl font-semibold">Adjuntar Documentos — Solicitud #{applicationId}</h2>
 
-      <ol style={{ marginTop: 8 }}>
-        {requirements.map((r) => {
-          const done = uploaded.find((u) => u.kind === r.kind);
+      <ol className="mt-3 space-y-3">
+        {FIXED_REQUIREMENTS.map((r) => {
+          const done = uploadedKinds.has(r.kind);
           const accept = KIND_ACCEPT[r.kind] || "application/pdf";
           return (
-            <li key={r.kind} style={{ marginBottom: 12 }}>
-              <div style={{ marginBottom: 4 }}>
-                {r.label} {r.required ? <strong>(Requerido)</strong> : <em>(Opcional)</em>}
+            <li key={r.kind} className="border rounded-xl p-3">
+              <div className="mb-2">
+                <span className="font-medium">{r.label}</span>{" "}
+                {r.required ? (
+                  <strong className="text-red-600">(Requerido)</strong>
+                ) : (
+                  <em className="text-gray-500">(Opcional)</em>
+                )}
               </div>
 
               <input
                 type="file"
                 accept={accept}
-                disabled={!!done}
+                disabled={done}
                 onChange={(e) => handleChange(r.kind, e.target.files?.[0])}
               />
 
               {done && (
-                <div style={{ fontSize: 12, marginTop: 4 }}>
-                  ✓ ya cargado{done.name ? `: ${done.name}` : ""}
-                  {done.url && (
-                    <>
-                      {" "}
-                      — <a href={done.url} target="_blank" rel="noreferrer">ver</a>
-                    </>
-                  )}
-                </div>
+                <div className="text-sm text-green-700 mt-2">✓ Ya cargado</div>
               )}
             </li>
           );
         })}
       </ol>
 
-      <div style={{ marginTop: 12 }}>
-        <button onClick={uploadAll} disabled={loading}>
-          {loading ? "Cargando..." : "Subir adjuntos"}
+      <div className="mt-4 space-x-2">
+        <button
+          onClick={uploadAndSubmit}
+          disabled={loading}
+          className="px-3 py-2 rounded-xl shadow bg-blue-600 text-white"
+        >
+          {loading ? "Procesando..." : "Subir y enviar ahora"}
         </button>
-        &nbsp;
-        <button onClick={enviarSolicitud} disabled={loading || !uploaded.length}>
-          {loading ? "Enviando..." : "Enviar solicitud"}
+
+        <button
+          onClick={volver}
+          disabled={loading}
+          className="px-3 py-2 rounded-xl shadow bg-gray-200"
+        >
+          Cancelar
         </button>
-        &nbsp;
-        <button onClick={volver} disabled={loading}>Cancelar</button>
       </div>
 
-      {msg && <p style={{ marginTop: 10 }}>{msg}</p>}
+      {msg && <p className="mt-3 text-sm">{msg}</p>}
+
+      <p className="mt-6 text-xs text-gray-500">
+        * Marcamos como "ya cargado" al subir en esta sesión. Si necesitas listar lo ya
+        existente desde el backend, puedo agregar un fetch para traer el estado real.
+      </p>
     </div>
   );
 }

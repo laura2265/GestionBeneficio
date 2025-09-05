@@ -25,14 +25,13 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-
 app.use(maybeAuth);
 (BigInt.prototype as any).toJSON = function () {
   return this.toString();
 };
 
+app.use("/storage", express.static(path.join(process.cwd(), "storage")));
 const UPLOAD_DIR = path.resolve("uploads");
-// Servir archivos subidos en /uploads/<filename>
 app.use(
   "/uploads",
   express.static(UPLOAD_DIR, {

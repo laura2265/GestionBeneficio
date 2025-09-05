@@ -241,3 +241,47 @@
   margin-bottom: 10px;
   color: #2E2A7B;
 }
+
+.fileList{
+  overflow-y: scroll;
+  max-height: 500px;
+}
+
+/* Buscador */
+.searchWrap { display:flex; justify-content:center; padding: 0 20px 10px; }
+.searchInput { width:100%; max-width:560px; border:1px solid #363636; border-radius:12px; padding:10px 14px; font-size:0.95rem; }
+
+
+/* Lista de archivos con preview */
+.filesLayout { display:grid; grid-template-columns: 1.1fr 1.6fr; gap:16px; }
+.fileList { min-height: 200px; }
+.filePreview { min-height: 300px; border:1px solid #eee; border-radius:12px; padding:10px; background:#c9dbe688; }
+
+.filePreview1 { max-height: 250px; border:1px solid #eee; border-radius:12px; padding:10px; background:#c9dbe688; }
+
+.fileGrid { list-style:none; padding:0; margin:0; display:grid; grid-template-columns: repeat(auto-fill,minmax(220px,1fr)); gap:12px; }
+.fileItem { border:1px solid #aaaaaa; border-radius:12px; padding:10px; background:#fff; display:flex; flex-direction:column; gap:8px; }
+.fileThumb { height:120px; border-radius:10px; background:#dedede; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+.fileThumb img { width:100%; height:100%; object-fit:cover; }
+.thumbPdf, .thumbOther { font-weight:700; color:#2E2A7B; }
+.fileMeta { min-height:38px; }
+.fileName { font-size:0.9rem; font-weight:600; color:#333; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fileInfo { font-size:0.75rem; color:#6b7280; }
+.fileActions { display:flex; gap:8px; }
+.btnLight { background:#b8b8b8; border:none; border-radius:8px; padding:6px 10px; }
+.btnDark { width:50px;background:#2E2A7B; color:#fff; text-decoration:none; border-radius:8px; padding:6px; }
+
+/* Preview */
+.previewEmpty { color:#6b7280; font-size:0.95rem; padding:12px; }
+.previewWrap { height:100%; display:flex; flex-direction:column; gap:8px; }
+.previewTitle { font-weight:600; font-size:0.95rem; color:#2E2A7B; }
+.previewImg { width:100%; max-height:480px; object-fit:contain; border-radius:10px; background:#fff; }
+.previewPdf { width:100%; height:520px; border:none; border-radius:10px; background:#fff; }
+.previewUnknown { color:#6b7280; font-size:0.9rem; }
+
+
+/* Responsivo */
+@media (max-width: 992px) {
+.filesLayout { grid-template-columns: 1fr; }
+.previewPdf { height:420px; }
+}

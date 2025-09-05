@@ -1,19 +1,30 @@
 import { FilesService } from "../services/files.service.js";
+// Convierte todos los BigInt a string de forma recursiva
+const sanitizeBigInt = (value) => {
+    if (typeof value === "bigint")
+        return value.toString();
+    if (Array.isArray(value))
+        return value.map(sanitizeBigInt);
+    if (value && typeof value === "object") {
+        const out = {};
+        for (const [k, v] of Object.entries(value))
+            out[k] = sanitizeBigInt(v);
+        return out;
+    }
+    return value;
+};
 export class FilesController {
-    static async list(req, res, next) {
+    static async listByApplication(req, res, next) {
         try {
-            res.json(await FilesService.list({ appId: req.query.appId ? Number(req.query.appId) : undefined }));
+            const applicationId = Number(req.params.applicationId);
+            if (isNaN(applicationId)) {
+                return res.status(400).json({ message: "applicationId inválido" });
+            }
+            const files = await FilesService.listByApplicationId(applicationId);
+            res.json(files);
         }
         catch (error) {
             next(error);
-        }
-    }
-    static async get(req, res, next) {
-        try {
-            res.json(await FilesService.get(Number(req.params.id)));
-        }
-        catch (err) {
-            next(err);
         }
     }
     static async create(req, res, next) {

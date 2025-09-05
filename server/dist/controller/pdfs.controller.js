@@ -1,32 +1,38 @@
 import { PdfsService } from "../services/pdfs.service.js";
+const sanitizeBigInt = (value) => {
+    if (typeof value === "bigint")
+        return value.toString();
+    if (Array.isArray(value))
+        return value.map(sanitizeBigInt);
+    if (value && typeof value === "object") {
+        const out = {};
+        for (const [k, v] of Object.entries(value))
+            out[k] = sanitizeBigInt(v);
+        return out;
+    }
+    return value;
+};
 export class PdfsController {
     static async list(req, res, next) {
         try {
-            res.json(await PdfsService.list({ appId: req.query.appId ? Number(req.query.appId) : undefined }));
+            const applicationId = Number(req.params.applicationId);
+            if (isNaN(applicationId)) {
+                return res.status(400).json({ message: "applicationId inválido" });
+            }
+            const files = await PdfsService.list(applicationId);
+            res.json(files);
         }
-        catch (err) {
-            next(err);
-        }
-    }
-    static async get(req, res, next) {
-        try {
-            res.json(await PdfsService.get(Number(req.params.id)));
-        }
-        catch (err) {
-            next(err);
+        catch (error) {
+            next(error);
         }
     }
     static async create(req, res, next) {
         try {
-            res.json(await PdfsService.create(req.body));
-        }
-        catch (err) {
-            next(err);
-        }
-    }
-    static async update(req, res, next) {
-        try {
-            res.json(await PdfsService.update(Number(req.params.id), req.body));
+            // Lee userId del header (si lo envías desde el FE)
+            const hdr = req.headers["x-user-id"];
+            const userId = hdr ? BigInt(String(hdr)) : undefined;
+            const out = await PdfsService.create(req.body, userId);
+            res.status(201).json(out);
         }
         catch (err) {
             next(err);

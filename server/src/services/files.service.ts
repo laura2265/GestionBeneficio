@@ -1,26 +1,18 @@
+import { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { fileCreateSchema, fileUpdateSchema } from "../Schemas/file.schema.js";
+import { hasRole } from "./rbac.service.js";
+import { PrismaClient } from "@prisma/client/extension";
 
 export class FilesService{
 
-    static async list({ appId, page=1, size=20 }:{ appId?: number; page?: number; size?: number }) {
-        const skip = (page - 1) * size;
-        const where: any = {};
-        if (appId) where.application_id = appId;
-            const [items, total] = await Promise.all([
-            prisma.application_files.findMany({ where, skip, take: size, orderBy: { id: 'desc' } }),
-            prisma.application_files.count({ where })
-        ]);
-        return { items, total, page, size };
-    }
+    static async listByApplicationId(applicationId: number) {
+      const files = await prisma.application_files.findMany({
+        where: { application_id: applicationId },
+        orderBy: { id: 'desc' }
+      });
 
-    static async get(id:number){
-        const item = await prisma.application_files.findUnique({ where: {id} });
-
-        if(!item){
-            throw {status: 404, message: 'Archivo no encontrado'};
-        }
-        return item;
+      return files;
     }
     static async create(payload: unknown){
         const data=  fileCreateSchema.parse(payload);

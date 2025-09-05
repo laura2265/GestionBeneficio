@@ -17,14 +17,14 @@ export const applicationCreateSchema = z.object({
 });
 export const applicationUpdateSchema = applicationCreateSchema.partial();
 export class ApplicationsService {
-    static async list(currentUserId, { page = 1, size = 10, estado } = {}) {
+    static async list(currentApplicationId, { page = 1, size = 10, estado } = {}) {
         const skip = (page - 1) * size;
-        const isSupervisor = await hasRole(currentUserId, "SUPERVISOR");
+        const isSupervisor = await (currentApplicationId);
         const where = {};
         if (estado)
             where.estado = estado;
         if (!isSupervisor)
-            where.tecnico_id = BigInt(currentUserId);
+            where.tecnico_id = BigInt(currentApplicationId);
         const [items, total] = await Promise.all([
             prisma.applications.findMany({ where, skip, take: size, orderBy: { id: "desc" } }),
             prisma.applications.count({ where }),
@@ -186,28 +186,29 @@ export class ApplicationsService {
         });
     }
     //Rechazar la solicitud
-    static async reject(appId, supervisorUserId, motivo) {
+    static async reject(appId, supervisorUserId, comment) {
         await ensureRole(supervisorUserId, "SUPERVISOR");
-        if (!motivo || !motivo.trim()) {
-            throw { status: 400, message: "Motivo de rechazo requerido" };
-        }
         return prisma.$transaction(async (tx) => {
             const app = await tx.applications.findUnique({ where: { id: BigInt(appId) } });
             if (!app) {
                 throw { status: 404, message: "Aplicación no encontrada" };
             }
-            if (app.estado === "ENVIADA") {
-                throw { status: 404, message: 'Solo puede rechazar una aplicación Enviada' };
+            if (app.estado !== "ENVIADA") {
+                throw { status: 400, message: "Solo se puede aprobar una aplicación Enviada" };
             }
-            const update = await tx.applications.update({
+            const complete = await ApplicationsService.isComplete(app.id, tx);
+            if (!complete) {
+                throw { status: 400, message: "La aplicación no cumple todos los requisitos obligatorios" };
+            }
+            const updated = await tx.applications.update({
                 where: { id: app.id },
                 data: {
                     estado: "RECHAZADA",
                     supervisor_id: BigInt(supervisorUserId),
                     revisada_at: new Date(),
-                    rechazada_at: new Date(),
-                    motivo_rechazo: motivo,
-                }
+                    aprobada_at: new Date(),
+                    motivo_rechazo: null,
+                },
             });
             await tx.application_history.create({
                 data: {
@@ -215,10 +216,10 @@ export class ApplicationsService {
                     from_status: "ENVIADA",
                     to_status: "RECHAZADA",
                     changed_by: BigInt(supervisorUserId),
-                    comment: motivo,
+                    comment: comment ?? "rechazada",
                 }
             });
-            return update;
+            return updated;
         });
     }
     //Adjuntar PDF

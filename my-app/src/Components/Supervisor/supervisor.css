@@ -1,7 +1,8 @@
+/* ---------- HEADER ---------- */
 .content-dashSuper {
-  padding: 40px;
   text-align: center;
-  font-family: 'Arial', sans-serif;
+  font-family: 'Poppins', sans-serif;
+  margin-bottom: 20px;
 }
 
 .content-dashSuper h2 {
@@ -31,89 +32,212 @@
   left: 20%;
 }
 
-.contentCards {
+/* ---------- NAV BUTTONS ---------- */
+.ButtonsHead {
   display: flex;
   justify-content: center;
-  align-items: stretch;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.ButtonsHead button {
+  padding: 10px 18px;
+  border-radius: 25px;
+  border: none;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.ButtonsHead button:hover {
+  opacity: 0.9;
+}
+
+.ButtonsHead .bg-gray-900 {
+  background: #2E2A7B !important;
+  color: #fff !important;
+}
+
+.ButtonsHead .bg-gray-200 {
+  background: #f1f1f1;
+  color: #333;
+}
+
+.refreshBtn {
+  background: #FF3C3C !important;
+  color: #fff !important;
+  font-weight: bold;
+}
+
+/* ---------- CARDS ---------- */
+.cards-container {
+  display: flex;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 25px;
+  padding: 20px;
 }
 
 .card {
   background: #fff;
   border-radius: 16px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  width: 300px;
-  padding: 25px;
+  padding: 20px;
   text-align: center;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-.card img {
-  width: 100px;
-  height: 100px;
-  object-fit: contain;
-  margin-bottom: 15px;
-}
-
 .card h3 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
+  font-weight: 600;
   color: #333;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .card p {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: #666;
-  margin-bottom: 20px;
-  line-height: 1.4;
+  margin-bottom: 6px;
 }
 
-.btn-card {
-  background-color: #007bff;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: bold;
-  padding: 10px 20px;
+.card-buttons {
+  margin-top: 15px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.card-buttons button {
+  padding: 8px 14px;
   border: none;
   border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
-.btn-card:hover {
-  background-color: #0056b3;
+/* Botones de acción */
+.card-buttons button:hover {
+  opacity: 0.85;
 }
 
-.card:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+.card-buttons .approve {
+  background: #28a745;
+  color: #fff;
 }
 
+.card-buttons .reject {
+  background: #dc3545;
+  color: #fff;
+}
+
+.card-buttons .approve:hover {
+  background: #218838;
+}
+
+.card-buttons .reject:hover {
+  background: #c82333;
+}
+
+/* ---------- DRAWER ---------- */
+.drawerWrap {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.drawer {
+  border-radius: 16px 0 0 16px;
+}
+
+.drawer h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #2E2A7B;
+}
+
+/* ---------- RESPONSIVE ---------- */
 @media (max-width: 768px) {
-  .contentCards {
-    flex-direction: column;
-    align-items: center;
+  .content-dashSuper h2 {
+    font-size: 1.6rem;
   }
 
   .card {
-    width: 90%;
-  }
-
-  .content-dashSuper h2 {
-    font-size: 2rem;
-  }
-
-  .card img {
-    width: 80px;
-    height: 80px;
+    padding: 15px;
   }
 
   .card h3 {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
   }
+
+  .card-buttons button {
+    flex: 1 1 45%;
+  }
+}
+
+/*lista*/
+
+/* ---------- DRAWER DETALLE ---------- */
+.drawer {
+  background: #fff;
+  border-radius: 16px 0 0 16px;
+  padding: 20px;
+}
+
+.drawer h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #2E2A7B;
+  margin-bottom: 15px;
+}
+
+/* Contenedor general */
+.detail-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+@media (max-width: 768px) {
+  .detail-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Cada campo */
+.detail-field {
+  background: #f9f9f9;
+  border-radius: 10px;
+  padding: 12px 15px;
+  border: 1px solid #eee;
+  transition: background 0.3s ease;
+}
+
+.detail-field:hover {
+  background: #f1f1ff;
+}
+
+.detail-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 5px;
+}
+
+.detail-value {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  word-break: break-word;
+}
+
+/* Adjuntos */
+.detail-attachments {
+  margin-top: 20px;
+}
+
+.detail-attachments h4 {
+  font-size: 1rem;
+  font-weight: bold;
+  margin-bottom: 10px;
+  color: #2E2A7B;
 }

@@ -149,27 +149,42 @@ export default function UploadDocs({ applicationId, onSubmitted, volver }) {
           const done = uploadedKinds.has(r.kind);
           const accept = KIND_ACCEPT[r.kind] || "application/pdf";
           return (
-            <li key={r.kind} className="border rounded-xl p-3">
-              <div className="mb-2">
-                <span className="font-medium">{r.label}</span>{" "}
-                {r.required ? (
-                  <strong className="text-red-600">(Requerido)</strong>
-                ) : (
-                  <em className="text-gray-500">(Opcional)</em>
-                )}
+            <li key={r.kind} className="upload-item">
+              <div className="label">
+                <span>{r.label}</span> {r.required ? <strong>(Requerido)</strong> : <em>(Opcional)</em>}
               </div>
-
-              <input
-                type="file"
-                accept={accept}
-                disabled={done}
-                onChange={(e) => handleChange(r.kind, e.target.files?.[0])}
-              />
-
-              {done && (
-                <div className="text-sm text-green-700 mt-2">✓ Ya cargado</div>
-              )}
+                      
+              <div
+                className="drop-zone"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  handleChange(r.kind, e.dataTransfer.files[0]);
+                }}
+              >
+                {selected[r.kind] ? (
+                  <div className="file-preview">
+                    {selected[r.kind].type.includes("pdf") ? (
+                      <img src="/pdf-icon.png" alt="PDF" />
+                    ) : (
+                      <img src={URL.createObjectURL(selected[r.kind])} alt="preview" />
+                    )}
+                    <p>{selected[r.kind].name}</p>
+                  </div>
+                ) : (
+                  <p>Arrastra tu archivo aquí o haz clic para seleccionar</p>
+                )}
+            
+                <input
+                  type="file"
+                  accept={accept}
+                  onChange={(e) => handleChange(r.kind, e.target.files[0])}
+                  style={{ display: "none" }}
+                  id={`file-${r.kind}`}
+                />
+              </div>
             </li>
+
           );
         })}
       </ol>

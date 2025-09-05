@@ -1,5 +1,6 @@
 // SupervisorDashboard.v2.jsx
 import { useEffect, useMemo, useState } from "react";
+import './supervisor.css'
 
 const API_BASE = import.meta?.env?.VITE_API_BASE || "http://localhost:3000";
 const cx = (...a) => a.filter(Boolean).join(" ");
@@ -161,60 +162,66 @@ export default function SupervisorDashboardV2({ classes = {} }) {
     );
   };
 
+  const cerrarSesion = () => {
+    localStorage.removeItem("auth");
+    window.location.href = "/login";
+  };
   return (
-    <div className={cx("p-4 max-w-7xl mx-auto", classes.wrapper)}>
+    <div >
+      
       <header className="mb-4 flex items-center justify-between">
-        <h1 className={cx("text-2xl font-semibold", classes.title)}>Panel del Supervisor</h1>
-        <div className="space-x-2">
-          {TABS.map((t) => (
-            <Pill key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.label}</Pill>
-          ))}
-          <button className={cx("ml-2 px-3 py-2 rounded bg-gray-200", classes.refreshBtn)} onClick={fetchList} disabled={loading}>
-            {loading ? "Actualizando..." : "Actualizar"}
-          </button>
+        <div className="content-dashSuper">
+          <h2>Dashboard Supervisor</h2>
+        </div>
+        
+        <div className="">
+          <div className="ButtonsHead">
+            {TABS.map((t) => (
+              <Pill key={t.key} active={tab === t.key} onClick={() => setTab(t.key)}>{t.label}</Pill>
+            ))}
+            <button className={cx("ml-2 px-3 py-2 rounded bg-gray-200", classes.refreshBtn)} onClick={fetchList} disabled={loading}>
+              {loading ? "Actualizando..." : "Actualizar"}
+            </button>
+            <button
+              className="px-3 py-2 rounded bg-red-600 text-white"
+              onClick={cerrarSesion}
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+          
+          
         </div>
       </header>
 
       {error && <div className="p-3 rounded bg-red-50 text-red-700 mb-3">{error}</div>}
 
-      <section className="mb-3 flex items-center gap-2">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Buscar por ID, nombre o documento" className={cx("w-full md:w-96 border rounded p-2", classes.search)} />
-      </section>
 
-      <section className="border rounded-xl overflow-hidden">
-        <div className="grid grid-cols-12 px-4 py-2 bg-gray-50 text-sm font-medium">
-          <div className="col-span-2">ID</div>
-          <div className="col-span-4">Solicitante</div>
-          <div className="col-span-3">Documento</div>
-          <div className="col-span-2">Fecha</div>
-          <div className="col-span-1 text-right">Acciones</div>
-        </div>
+      <section className="cards-container">
         {filtered.length === 0 ? (
           <div className="p-4 text-gray-600">No hay solicitudes.</div>
         ) : (
-          <ul>
-            {filtered.map((row) => (
-              <li key={row.id} className={cx("grid grid-cols-12 px-4 py-3 border-t items-center", classes.row)}>
-                <div className="col-span-2">{row.id}</div>
-                <div className="col-span-4 truncate">{row.nombre}</div>
-                <div className="col-span-3">{row.documento}</div>
-                <div className="col-span-2">{row.fecha}</div>
-                <div className="col-span-1 text-right space-x-2">
-                  <button className={cx("px-2 py-1 rounded bg-gray-200", classes.detailBtn)} onClick={() => openDetail(row)}>Detalle</button>
-                  <button className={cx("px-2 py-1 rounded bg-gray-200", classes.filesBtn)} onClick={() => openFiles(row)}>Archivos</button>
-                  <button className={cx("px-2 py-1 rounded bg-gray-200", classes.pdfsBtn)} onClick={() => openPdfs(row)}>PDFs</button>
-                  {tab === "ENVIADA" && (
-                    <>
-                      <button className={cx("px-2 py-1 rounded bg-emerald-600 text-white", classes.approveBtn)} onClick={() => approve(row)}>Aprobar</button>
-                      <button className={cx("px-2 py-1 rounded bg-red-600 text-white", classes.rejectBtn)} onClick={() => reject(row)}>Rechazar</button>
-                    </>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          filtered.map((row) => (
+            <div key={row.id} className="card">
+              <h3>{row.nombre}</h3>
+              <p><strong>ID:</strong> {row.id}</p>
+              <p><strong>Documento:</strong> {row.documento}</p>
+              <div className="card-buttons">
+                <button onClick={() => openDetail(row)}>Detalle</button>
+                <button onClick={() => openFiles(row)}>Archivos</button>
+                <button onClick={() => openPdfs(row)}>PDFs</button>
+                {tab === "ENVIADA" && (
+                  <>
+                    <button className="approve" onClick={() => approve(row)}>Aprobar</button>
+                    <button className="reject" onClick={() => reject(row)}>Rechazar</button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))
         )}
       </section>
+
 
       {/* Drawer: Detalle */}
       <Drawer open={drawer === "detail"} title={sel ? `Detalle — Solicitud #${sel.id}` : "Detalle"} onClose={() => setDrawer(null)}>
@@ -238,8 +245,6 @@ export default function SupervisorDashboardV2({ classes = {} }) {
               <Field label="Actualizado" value={(detail.updated_at || "").toString().replace("T"," ").slice(0,19)} />
             </div>
             <hr/>
-            <h4 className="font-semibold">Adjuntos</h4>
-            <DetailFiles applicationId={sel?.id} headers={headers} />
           </div>
         )}
       </Drawer>
@@ -259,7 +264,6 @@ export default function SupervisorDashboardV2({ classes = {} }) {
               <li key={p.id} className="flex items-center justify-between border rounded p-2">
                 <div>
                   <div className="font-medium">{p.name}</div>
-                  <div className="text-xs text-gray-500">{p.tipo} · {p.created_at}</div>
                 </div>
                 {p.url && (
                   <a className="px-2 py-1 rounded bg-gray-900 text-white" href={`${API_BASE}${p.url}`} target="_blank" rel="noreferrer">
@@ -277,12 +281,13 @@ export default function SupervisorDashboardV2({ classes = {} }) {
 
 function Field({ label, value }) {
   return (
-    <div>
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="font-medium break-words">{value ?? "—"}</div>
+    <div className="detail-field">
+      <div className="detail-label">{label}</div>
+      <div className="detail-value">{value ?? "—"}</div>
     </div>
   );
 }
+
 
 function DetailFiles({ applicationId, headers }) {
   const [files, setFiles] = useState([]);

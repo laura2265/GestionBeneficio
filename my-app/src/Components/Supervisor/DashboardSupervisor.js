@@ -65,7 +65,16 @@ export default function SupervisorDashboardV3({ classes = {} }) {
     }
   };
 
-  useEffect(() => { fetchList(); }, [tab]);
+  useEffect(() => {
+    fetchList();
+    setDrawer(null);
+    setSel(null);
+    setDetail(null);
+    setFiles([]);
+    setPdfs([]);
+    setPreviewFile(null);
+  }, [tab]);
+
 
   const filtered = useMemo(() => {
     const qq = q.trim().toLowerCase();
@@ -179,43 +188,52 @@ export default function SupervisorDashboardV3({ classes = {} }) {
   };
 
   const approve = async (row) => {
-    const comentario = window.prompt("Comentario (opcional) para aprobación:", "");
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/applications/${row.id}/approve`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ comentario }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "No se pudo aprobar");
-      await fetchList();
-      // Generar y guardar PDF de resolución (APROBADA)
-      await generateResolutionPdf(row.id, 'APROBADA', comentario);
-    } catch (e) {
-      alert(e.message || "Error");
-    } finally { setLoading(false); }
-  };
+  const comentario = window.prompt("Comentario (opcional) para aprobación:", "");
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_BASE}/api/applications/${row.id}/approve`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ comentario }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || "No se pudo aprobar");
+    await fetchList();
+    await generateResolutionPdf(row.id, "APROBADA", comentario);
+    // 🔹 cerrar drawer y limpiar selección
+    setDrawer(null);
+    setSel(null);
+  } catch (e) {
+    alert(e.message || "Error");
+  } finally {
+    setLoading(false);
+  }
+};
 
-  const reject = async (row) => {
-    const motivo = window.prompt("Motivo del rechazo:", "Información incompleta");
-    if (!motivo) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/applications/${row.id}/reject`, {
-        method: "POST",
-        headers: { ...headers, "Content-Type": "application/json" },
-        body: JSON.stringify({ motivo }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data?.message || "No se pudo rechazar");
-      await fetchList();
-      // Generar y guardar PDF de resolución (RECHAZADA)
-      await generateResolutionPdf(row.id, 'RECHAZADA', motivo);
-    } catch (e) {
-      alert(e.message || "Error");
-    } finally { setLoading(false); }
-  };
+const reject = async (row) => {
+  const motivo = window.prompt("Motivo del rechazo:", "Información incompleta");
+  if (!motivo) return;
+  setLoading(true);
+  try {
+    const res = await fetch(`${API_BASE}/api/applications/${row.id}/reject`, {
+      method: "POST",
+      headers: { ...headers, "Content-Type": "application/json" },
+      body: JSON.stringify({ motivo }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data?.message || "No se pudo rechazar");
+    await fetchList();
+    await generateResolutionPdf(row.id, "RECHAZADA", motivo);
+    // 🔹 cerrar drawer y limpiar selección
+    setDrawer(null);
+    setSel(null);
+  } catch (e) {
+    alert(e.message || "Error");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const Pill = ({ active, children, onClick }) => (
     <button onClick={onClick} className={cx("px-3 py-1 rounded-full text-sm", active ? "bg-gray-900 text-white" : "bg-gray-200", classes.tab)}>
@@ -353,8 +371,7 @@ export default function SupervisorDashboardV3({ classes = {} }) {
               <Field label="Actualizado" value={(detail.updated_at || "").toString().replace("T"," ").slice(0,19)} />
             </div>
             <hr/>
-            <div className="hint">Tip: En la pestaña Archivos puedes visualizar los documentos adjuntos antes de decidir.</div>
-          </div>
+            </div>
         )}
       </Drawer>
 

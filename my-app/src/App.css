@@ -1,26 +1,31 @@
 *{
-  margin: 0;
   padding: 0;
-  box-shadow: border-box;
+  margin: 0;
+  box-sizing: border-box;
 }
 
-body{
+body {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  place-items: center; 
+  margin: 0;
+}
+
+
+.contentLogin{
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 100vw;
-  height:  100vh;
-  font-family: Arial, sans-serif;
-}
-
-.FormLogin{
-  flex: 1;
   width: 100%;
+}
+.FormLogin{
   max-width: 450px;
   padding: 20px;
   border-radius: 10px;
   box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.351);
-  margin-left: 20px;
+  margin-left: auto;
+  margin-right: auto;
 }
 .FormLogin h1{
   margin-bottom: 31px;

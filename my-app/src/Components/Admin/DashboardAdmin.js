@@ -1,8 +1,59 @@
 import { useEffect, useMemo, useState } from 'react';
 import './dashboardAdmin.css';
+import { useNavigate } from 'react-router-dom';
 
 const NORMALIZE = (v) => (v || '').toString().trim().toUpperCase();
 const ESTADOS = ['BORRADOR', 'ENVIADA', 'APROBADA', 'RECHAZADA'];
+
+function MiniLineChart({ data, height = 160, padding = 24 }) {
+
+  if (!data || data.length === 0) return <div className="chart-placeholder">Sin datos</div>;
+  const width = 560; // puedes ajustar o hacer que sea 100% del contenedor
+  const maxY = Math.max(1, ...data.map(d => d.value));
+  const innerW = width - padding * 2;
+  const innerH = height - padding * 2;
+
+  const x = (i) => padding + (i * innerW) / (data.length - 1 || 1);
+  const y = (v) => padding + innerH - (v * innerH) / maxY;
+
+  const path = data.map((d, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(d.value)}`).join(' ');
+  const yTicks = Array.from({ length: Math.min(5, maxY + 1) }, (_, i) => Math.round((i * maxY) / Math.min(4, maxY))).filter((v, i, a) => a.indexOf(v) === i);
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: '100%', height }}>
+      {/* Ejes simples */}
+      <line x1={padding} y1={height - padding} x2={width - padding} y2={height - padding} stroke="#ddd" />
+      <line x1={padding} y1={padding} x2={padding} y2={height - padding} stroke="#ddd" />
+
+      {/* Grid horizontal */}
+      {yTicks.map((t, i) => {
+        const yy = y(t);
+        return <line key={i} x1={padding} y1={yy} x2={width - padding} y2={yy} stroke="#f1f1f1" />;
+      })}
+
+      {/* Línea */}
+      <path d={path} fill="none" stroke="currentColor" strokeWidth="2" />
+
+      {/* Puntos */}
+      {data.map((d, i) => (
+        <circle key={i} cx={x(i)} cy={y(d.value)} r="3" fill="currentColor" />
+      ))}
+
+      {/* Etiquetas Y */}
+      {yTicks.map((t, i) => (
+        <text key={i} x={padding - 6} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize="10" fill="#666">{t}</text>
+      ))}
+
+      {/* Marcas X (primer, medio y último día) */}
+      {[0, Math.floor(data.length/2), data.length-1].map((idx, i) => (
+        <text key={i} x={x(idx)} y={height - padding + 12} textAnchor="middle" fontSize="10" fill="#666">
+          {data[idx]?.date?.slice(5)}{/* mm-dd */}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 
 function DashboardAdmin() {
   const [loading, setLoading] = useState(false);
@@ -11,6 +62,18 @@ function DashboardAdmin() {
   const [appsByUser, setAppsByUser] = useState({});
   const [applications, setApplications] = useState([]);
   const [activityHistory, setActivityHistory] = useState([]);
+    // arriba, junto a otros useState:
+  const [showDetails, setShowDetails] = useState(false);
+  const [selectedApp, setSelectedApp] = useState(null);
+
+  const [q, setQ] = useState("");
+
+const openDetails = (app) => { setSelectedApp(app); setShowDetails(true); };
+const closeDetails = () => { setShowDetails(false); setSelectedApp(null); };
+
+// URL del PDF (ajústala si tu backend usa otro path o ya te da un campo report_url)
+const getPdfUrl = (app) => `http://localhost:3000/api/applications/${app.id}/report.pdf`;
+
 
   const fetchUsers = async () => {
     const res = await fetch('http://localhost:3000/api/users');
@@ -19,6 +82,31 @@ function DashboardAdmin() {
     // si tu API ya devuelve array directo, usa json; si es {items:[]}, usa json.items
     return Array.isArray(json) ? json : (json.items || []);
   };
+
+  const allApps = useMemo(() => {
+    const flat = Object.values(appsByUser).flat();
+    // desduplicar por id
+    const map = new Map(flat.map(a => [a.id, a]));
+    return Array.from(map.values());
+  }, [appsByUser]);
+
+  const filteredApps = useMemo(() => {
+  const query = q.trim().toLowerCase();
+  if (!query) return allApps;
+
+  return allApps.filter((a) => {
+    const id = String(a.id || "").toLowerCase();
+    const doc = String(a.numero_documento || a.dni || "").toLowerCase();
+    const estado = String(a.estado || a.status || "").toLowerCase();
+
+    return (
+      id.includes(query) ||
+      doc.includes(query) ||
+      estado.includes(query)
+    );
+  });
+}, [q, allApps]);
+
 
   const fetchAppsForUser = async (idUser) => {
     const res = await fetch('http://localhost:3000/api/applications', {
@@ -33,6 +121,8 @@ function DashboardAdmin() {
     return Array.isArray(json) ? json : (json.items || []);
   };
 
+
+const navigate = useNavigate();
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -63,17 +153,22 @@ function DashboardAdmin() {
     return () => { alive = false; };
   }, []);
 
+  // Reemplaza globalStats actual por:
   const globalStats = useMemo(() => {
     const counts = { BORRADOR: 0, ENVIADA: 0, APROBADA: 0, RECHAZADA: 0 };
-    Object.values(appsByUser).forEach((apps) => {
-      apps.forEach((a) => {
-        const st = NORMALIZE(a.estado || a.status);
-        if (counts[st] !== undefined) counts[st]++;
-      });
+    allApps.forEach((a) => {
+      const st = NORMALIZE(a.estado || a.status);
+      if (counts[st] !== undefined) counts[st]++;
     });
     const totalApps = Object.values(counts).reduce((s, n) => s + n, 0);
     return { ...counts, totalApps };
-  }, [appsByUser]);
+  }, [allApps]);
+
+  // En la tabla de "Últimas solicitudes", usa allApps (y ya no applications):
+  {allApps.slice(0,10).map((a) => (
+    <tr key={a.id}> ... </tr>
+  ))}
+
 
   const perUserRows = useMemo(() => {
     return users.map((u) => {
@@ -87,13 +182,83 @@ function DashboardAdmin() {
     });
   }, [users, appsByUser]);
 
+
+  //Historial de tareas
+  // debajo de tus useState(...)
+const usersById = useMemo(
+  () => Object.fromEntries((users || []).map(u => [u.id, u])),
+  [users]
+);
+
+useEffect(() => {
+  if (!users.length) return; // esperamos a tener usuarios
+  let alive = true;
+  (async () => {
+    try {
+      const res = await fetch('http://localhost:3000/api/history/', { method: 'GET' });
+      if (!res.ok) throw new Error('Error al consultar el historial de tareas');
+      const json = await res.json();
+      const items = Array.isArray(json) ? json : (json.items || []);
+
+      // Adjuntar user a partir de changed_by
+      const enriched = items.map(h => ({
+        ...h,
+        user: usersById[h.changed_by] || null,
+      }));
+
+      if (!alive) return;
+      setActivityHistory(enriched);
+    } catch (e) {
+      console.error(e);
+    }
+  })();
+  return () => { alive = false; };
+}, [users, usersById, setActivityHistory]);
+
+  const tasksPerDay = useMemo(() => {
+    // Normalizamos a yyyy-mm-dd
+    const toKey = (d) => {
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const m = String(dt.getMonth()+1).padStart(2,'0');
+      const day = String(dt.getDate()).padStart(2,'0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const counts = new Map();
+    (activityHistory || []).forEach((h) => {
+      const key = toKey(h.created_at || h.date || Date.now());
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+
+    // Rango: últimos 14 días (incluye hoy)
+    const days = 14;
+    const out = [];
+    const today = new Date();
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = toKey(d);
+      out.push({ date: key, value: counts.get(key) || 0 });
+    }
+    return out;
+  }, [activityHistory]);
+
+ const cerrarSesion = () => {
+    localStorage.removeItem("auth");
+    window.location.href = "/login";
+  };
   return (
   <div className="dashboard-container">
     <header className="dashboard-header">
       <h1 className="dashboard-title">Panel Administrativo</h1>
-      <div className="header-actions">
-        <button className="btn secondary">Exportar</button>
-        <button className="btn">Nuevo</button>
+      <div className='header-actions'>
+        <button
+          className="btn danger"
+          onClick={cerrarSesion}
+        >
+          Cerrar Sesión
+        </button>
       </div>
     </header>
 
@@ -136,86 +301,87 @@ function DashboardAdmin() {
         </div>
 
         <div className="left-grid" style={{ marginTop: 18 }}>
-          <div className="section">
-            <h3 className="section-title">Solicitudes por estado</h3>
-            <div className="chart-placeholder">[Gráfico de barras]</div>
-          </div>
 
-          <div className="section">
-            <h3 className="section-title">Tareas por día</h3>
-            <div className="chart-placeholder">[Gráfico de líneas]</div>
-          </div>
-
-          <div className="section" style={{ gridColumn: '1 / -1' }}>
+          <div className="sectionTable" style={{ gridColumn: '1 / -1' }}>
             <h3 className="section-title">Últimas solicitudes</h3>
+            <div className="searchWrap" style={{ marginBottom: "12px" }}>
+                <input
+                  type="text"
+                  className="searchInput"
+                  placeholder="Buscar por ID, documento o estado..."
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
             <div className="table-wrap">
-              <table className="table">
+              
+              <div className='contentTable'>
+                <table className="table">
                 <thead>
                   <tr>
-                    <th>ID</th><th>Solicitante</th><th>Estado</th><th>Creada</th>
+                    <th>ID</th>
+                    <th>Solicitante</th>
+                    <th>Documento</th>
+                    <th>Email</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {applications.slice(0,10).map((a) => (
-                    <tr key={a.id}>
-                      <td>{a.id}</td>
-                      <td>{a.nombres ? `${a.nombres} ${a.apellidos??''}` : (a.full_name||'-')}</td>
-                      <td>
-                        <span className={
-                          'badge ' + (
-                            (a.estado||a.status||'').toLowerCase()
-                              .replace('aprobada','aprobada')
-                              .replace('rechazada','rechazada')
-                              .replace('enviada','enviada')
-                              .replace('borrador','borrador')
-                          )
-                        }>
-                          {(a.estado||a.status||'-')}
-                        </span>
-                      </td>
-                      <td>{new Date(a.created_at||a.enviada_at||Date.now()).toLocaleDateString()}</td>
-                    </tr>
-                  ))}
+                  {filteredApps.slice(0, 50).map((a) =>{
+                    const fullName = a.nombres ? `${a.nombres} ${a.apellidos ?? ''}`.trim() : (a.full_name || '-');
+                    const estado = (a.estado || a.status || '-');
+                    return (
+                      <tr key={a.id}>
+                        <td>{a.id}</td>
+                        <td>{fullName}</td>
+                        <td>{a.numero_documento || a.dni || '-'}</td>
+                        <td>{a.email || a.correo || '-'}</td>
+                        <td>
+                          <span className={
+                            'badge ' + (
+                              estado.toLowerCase()
+                                .replace('aprobada','aprobada')
+                                .replace('rechazada','rechazada')
+                                .replace('enviada','enviada')
+                                .replace('borrador','borrador')
+                            )
+                          }>
+                            {estado}
+                          </span>
+                        </td>
+                       <td>
+                          <button className="btn small" onClick={() => navigate(`/detalle-admin/${a.id}`)}>Ver</button>
+                         </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div className="side-stack">
+      <aside className="side-stack">
         <div className="section">
-          <h3 className="section-title">Riesgo del proyecto</h3>
-          <div className="chart-placeholder">[Gauge / donut]</div>
-          <p className="muted" style={{ marginTop: 8 }}>Balanceado</p>
+            <h3 className="section-title">Tareas por día</h3>
+            <div className="chart"><MiniLineChart data={tasksPerDay} /></div>
+          </div>
+    <div className="sectionActividad">
+      <h3 className="section-title">Actividad reciente</h3>
+      {(activityHistory || []).slice(0, 8).map((h, i) => (
+        <div className="activity-item" key={i}>
+          <div className="avatar">{((h.user?.full_name || 'S')[0] || 'S').toUpperCase()}</div>
+          <div>
+            <div><strong>{h.user?.full_name || 'Sistema'}</strong> {h.action || 'actualizó una solicitud'}</div>
+            <div className="activity-meta">{new Date(h.created_at || Date.now()).toLocaleString()}</div>
+          </div>
         </div>
-
-        <div className="section">
-          <h3 className="section-title">Actividad reciente</h3>
-          {(activityHistory || []).slice(0, 5).map((h, i) => (
-            <div className="activity-item" key={i}>
-              <div className="avatar">
-                {(h.user?.full_name || 'U').slice(0, 1)}
-              </div>
-              <div>
-                <div>
-                  <strong>{h.user?.full_name || 'Usuario'}</strong>{" "}
-                  {h.action || 'actualizó una solicitud'}
-                </div>
-                <div className="activity-meta">
-                  {new Date(h.created_at || Date.now()).toLocaleString()}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="section">
-          <h3 className="section-title">Información</h3>
-          <div className="muted">Email: admin@demo.com<br/>Tel: 000-000-000</div>
-        </div>
-      </div>
+      ))}
     </div>
+  </aside>
+      </div>
     {loading && <div className="loading-overlay">Cargando…</div>}
   </div>
 );

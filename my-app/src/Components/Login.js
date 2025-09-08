@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import './login.css'
 
 function Login() {
     const navigate = useNavigate();
@@ -96,34 +96,36 @@ function Login() {
 
     return(
         <>
+          <div className='contentLogin'>
             <div className="FormLogin">
-                <h1>Iniciar Sesion </h1>
-                <form onSubmit={handleSubmitLogin}>
-                    <div className="inputContainer">
-                        <input
-                        type = "text"
-                        name='emailL'
-                        className="inputContainerInput"
-                        value={formDataLogin.emailL} 
-                        onChange={handleInputChangeLogin}
-                        /><br/><br/>
-                        <label className="inputContainerLabel">Usuario</label>
-                        { formErrorsLogin.emailL && <p className='error'>{formErrorsLogin.emailL}</p>}
-                    </div>
-                    <div className="inputContainer">
-                        <input 
-                        type="password" 
-                        name='passwordL'
-                        className="inputContainerInput"
-                        value={formDataLogin.passwordL}
-                        onChange={handleInputChangeLogin}
-                        /><br/><br/>
-                        <label className="inputContainerLabel">Contraseña</label>
-                        { formErrorsLogin.passwordL && <p className='error'>{formErrorsLogin.passwordL}</p>}
-                    </div>
-                    <button type="submit" className="InputButton1">Ingresar</button>
-                </form>
-            </div>
+                  <h1>Iniciar Sesion </h1>
+                  <form onSubmit={handleSubmitLogin}>
+                      <div className="inputContainer">
+                          <input
+                          type = "text"
+                          name='emailL'
+                          className="inputContainerInput"
+                          value={formDataLogin.emailL} 
+                          onChange={handleInputChangeLogin}
+                          /><br/><br/>
+                          <label className="inputContainerLabel">Usuario</label>
+                          { formErrorsLogin.emailL && <p className='error'>{formErrorsLogin.emailL}</p>}
+                      </div>
+                      <div className="inputContainer">
+                          <input 
+                          type="password" 
+                          name='passwordL'
+                          className="inputContainerInput"
+                          value={formDataLogin.passwordL}
+                          onChange={handleInputChangeLogin}
+                          /><br/><br/>
+                          <label className="inputContainerLabel">Contraseña</label>
+                          { formErrorsLogin.passwordL && <p className='error'>{formErrorsLogin.passwordL}</p>}
+                      </div>
+                      <button type="submit" className="InputButton1">Ingresar</button>
+                  </form>
+              </div>
+          </div>  
         </> 
     )
 }

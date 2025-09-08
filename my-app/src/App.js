@@ -6,6 +6,7 @@ import DashboardAdmin from './Components/Admin/DashboardAdmin.js';
 import DashboardSupervisor from './Components/Supervisor/DashboardSupervisor.js';
 import DashboardTecnico from './Components/Tecnico/DashboardTecnico.js';
 import RequireAuth from './Components/RequireAuth.js';
+import DetallesSolicitud from './Components/Admin/DetallesSolicitud.js';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
 
           //Admin
           <Route path='/admin' element={<DashboardAdmin/>}/>
+          <Route path='/detalle-admin/:id' element={<DetallesSolicitud />}/>
 
           //supervisor
           <Route path='/supervisor' element={<DashboardSupervisor />} />

@@ -1,11 +1,8 @@
 import { historyCreateSchema, historyUpdateSchema } from "../Schemas/history.schema.js";
 import { prisma } from "../db.js";
 export class HistoryService {
-    static async list(applicationId) {
-        const history = await prisma.application_history.findMany({
-            where: { application_id: applicationId },
-            orderBy: { id: 'desc' }
-        });
+    static async list() {
+        const history = await prisma.application_history.findMany();
         return history;
     }
     static async create(payload) {

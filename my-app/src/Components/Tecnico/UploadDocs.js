@@ -3,12 +3,12 @@ import { useMemo, useState } from "react";
 
 /** Requisitos fijos basados en tu tabla */
 const FIXED_REQUIREMENTS = [
-  { kind: "CEDULA",                   required: true,  label: "Cédula (PDF)" },
-  { kind: "CONTRATO",                 required: true,  label: "Contrato con anexos o audio (PDF/Audio)" },
-  { kind: "EVIDENCIA_ESTRATO_SISBEN", required: true,  label: "Certificado SISBEN o recibo (PDF)" },
+  { kind: "CEDULA",                   required: true,  label: "Copia de cedula (PDF)" },
+  { kind: "CONTRATO",                 required: true,  label: "Copia del contrato con anexos o audio (PDF/Audio)" },
+  { kind: "EVIDENCIA_ESTRATO_SISBEN", required: true,  label: "Evidencia del estrato 1 o 2/SISBEN (PDF)" },
   { kind: "FOTO_FACHADA",             required: false, label: "Foto de fachada (Imagen)" },
   { kind: "PRUEBA_VELOCIDAD",         required: false, label: "Prueba de velocidad (PDF/Imagen)" },
-  { kind: "VERIFICACION_ENERGIA",     required: false, label: "Verificación de energía (PDF/Imagen)" },
+  { kind: "VERIFICACION_ENERGIA",     required: false, label: "Recibo de energía (PDF/Imagen)" },
   { kind: "DECLARACION_JURAMENTADA",  required: false, label: "Declaración juramentada (PDF)" },
 ];
 
@@ -151,7 +151,7 @@ export default function UploadDocs({ applicationId, onSubmitted, volver }) {
           return (
             <li key={r.kind} className="upload-item">
               <div className="label">
-                <span>{r.label}</span> {r.required ? <strong>(Requerido)</strong> : <em>(Opcional)</em>}
+                <span>{r.label}</span> <strong>(Requerido)</strong> 
               </div>
                       
               <div
@@ -161,6 +161,7 @@ export default function UploadDocs({ applicationId, onSubmitted, volver }) {
                   e.preventDefault();
                   handleChange(r.kind, e.dataTransfer.files[0]);
                 }}
+                onClick={() => document.getElementById(`file-${r.kind}`).click()} 
               >
                 {selected[r.kind] ? (
                   <div className="file-preview">
@@ -208,11 +209,6 @@ export default function UploadDocs({ applicationId, onSubmitted, volver }) {
       </div>
 
       {msg && <p className="mt-3 text-sm">{msg}</p>}
-
-      <p className="mt-6 text-xs text-gray-500">
-        * Marcamos como "ya cargado" al subir en esta sesión. Si necesitas listar lo ya
-        existente desde el backend, puedo agregar un fetch para traer el estado real.
-      </p>
     </div>
   );
 }

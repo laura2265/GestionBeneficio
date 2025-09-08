@@ -11,11 +11,15 @@
   --shadow: 0 6px 18px rgba(15, 23, 42, .06);
   --radius: 16px;
 }
-
 .dashboard-container{
-  padding: 24px;
+  /* antes: solo padding */
+  width: min(1200px, 100% - 32px);  /* centrado con respiración a los lados */
+  margin-inline: auto;              /* <— centro real */
+  padding-block: 24px;
 }
-
+@media (min-width: 1400px){
+  .dashboard-container{ width: min(1280px, 100% - 48px); }
+}
 .dashboard-header{
   display: flex;
   align-items: center;
@@ -42,13 +46,15 @@
 
 .main-grid{
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr;  /* móvil: 1 col */
   gap: 18px;
+  min-height: 0;
 }
 
 @media (min-width: 900px){
   .main-grid{ grid-template-columns: 2fr 1fr; }
 }
+
 
 @media (min-width: 1200px){
   .main-grid{ grid-template-columns: 2fr 1fr; }
@@ -94,11 +100,15 @@
 .kpi-meta{ font-size:12px; color: var(--muted); }
 .kpi-value{ font-size:26px; font-weight: 800; }
 
-.section{
-  background: var(--card);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px;
+.section, .sectionTable{ min-height: 0; }
+.sectionActividad{
+  overflow-y: auto;
+  height: auto;
+}
+.sectionTable{
+  height: auto;           
+  max-height: none;
+  overflow: auto;        
 }
 .section-title{
   margin: 0 0 10px 0; font-size: 14px; color: var(--muted); font-weight: 600; letter-spacing: .2px;
@@ -107,28 +117,35 @@
 /* grid de gráficos/tablas (columna izquierda del layout) */
 .left-grid{
   display: grid;
-  grid-template-columns: 1fr;
   gap: 18px;
+  grid-template-columns: 1fr;
 }
 @media (min-width: 900px){
   .left-grid{ grid-template-columns: 1fr 1fr; }
 }
 
-/* ====== Tabla compacta ====== */
-.table-wrap{ overflow:auto; }
-.table{
+.table-wrap {
   width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+  overflow-x: auto;   
 }
+
+.contentTable{
+  max-height: 350px;
+}
+
+.table {
+  min-width: 300px;
+  border-collapse: collapse;
+}
+
 .table thead th{
   text-align: left; color: var(--muted); font-weight: 600; padding: 10px 8px;
 }
+
 .table tbody td{
   padding: 10px 8px; border-top: 1px solid #eef2f7;
 }
 
-/* Badges de estado */
 .badge{
   display: inline-block; padding:4px 8px; border-radius:999px; font-size: 12px; font-weight:600;
 }
@@ -149,6 +166,7 @@
 }
 .activity-meta{ font-size:12px; color: var(--muted); }
 
+.chart { color: var(--sky); }
 /* ====== Helpers ====== */
 .muted{ color: var(--muted); }
 .chart-placeholder{
@@ -160,3 +178,33 @@
 .error-banner{
   background:#fef2f2; color:#991b1b; border:1px solid #fecaca; padding:10px 12px; border-radius:12px; margin-bottom:12px;
 }
+
+
+/* === Detalle de solicitud === */
+.details-card { padding-bottom: 6px; }
+.details-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px 16px;
+}
+@media (min-width: 720px){
+  .details-grid{ grid-template-columns: 1fr 1fr; }
+}
+.field{ display: grid; gap: 4px; }
+.field-wide{ grid-column: 1 / -1; }
+.field-label{ font-size: 12px; color: var(--muted); }
+.field-value{ font-weight: 600; color: var(--text); word-break: break-word; }
+
+.searchWrap {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.searchInput {
+  padding: 8px 12px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  width: 300px;
+  font-size: 14px;
+}
+

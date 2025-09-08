@@ -15,8 +15,9 @@ export const applicationCreateSchema = z.object({
   numero_contacto: z.string().optional(),
   estrato_id: z.number().int().optional(),
   declaracion_juramentada: z.boolean().default(false),
+  UPZ: z.string().min(2),
   tecnico_id: z.number().int().optional(),
-  supervisor_id: z.number().int().optional()
+  supervisor_id: z.number().int().optional(),
 });
 
 
@@ -111,6 +112,7 @@ export class ApplicationsService {
             numero_contacto: data.numero_contacto,
             estrato_id: data.estrato_id,
             declaracion_juramentada: data.declaracion_juramentada,
+            ...(data.UPZ ? { UPZ: data.UPZ } : {}),
             estado: "BORRADOR",
             tecnico_id: BigInt(tecnicoId)
           }

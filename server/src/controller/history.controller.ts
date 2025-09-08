@@ -14,12 +14,7 @@ const sanitizeBigInt = (value: any): any => {
 export class HistoryController{
     static async list(req: Request, res:Response, next: NextFunction){
         try {
-          const applicationId = Number(req.params.applicationId);
-          if (isNaN(applicationId)) {
-            return res.status(400).json({ message: "applicationId inválido" });
-          }
-
-          const history = await HistoryService.list(applicationId);
+          const history = await HistoryService.list();
           res.json(history);
         } catch (error) {
           next(error);

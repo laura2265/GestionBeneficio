@@ -6,13 +6,13 @@
   "scripts": {
     "build": "tsc",
     "postinstall": "prisma generate",
-    "start": "node dist/app.js",
+    "prestart": "prisma generate",
+    "start": "npm run build && node dist/app.js",
     "dev": "tsx watch src/app.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "@prisma/client": "^6.15.0",
     "argon2": "^0.44.0",

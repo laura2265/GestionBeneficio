@@ -1,9 +1,9 @@
 // imports (ajusta rutas a tu proyecto)
 import path from "path";
 import fs from "fs/promises";
-import { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { generateResolutionPdfFile } from "../utils/generatePdfToFile.js";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library.js";
 export class PdfsService {
     static async list(applicationId) {
         const pdfs = await prisma.application_pdfs.findMany({
@@ -56,7 +56,7 @@ export class PdfsService {
             }
             catch (e) {
                 const isUnique = e?.code === "P2002" ||
-                    (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002");
+                    (e instanceof PrismaClientKnownRequestError && e.code === "P2002");
                 if (isUnique && attempt < MAX_RETRIES) {
                     attempt++;
                     continue;

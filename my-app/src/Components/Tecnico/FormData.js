@@ -16,6 +16,7 @@ export default function FormData({ borrador, volver, onDraftSaved }) {
     tipo_documento: "CC",
     numero_documento: "",
     direccion: "",
+    UPZ:"",
     barrio: "",
     correo: "",
     numero_contacto: "",
@@ -45,6 +46,7 @@ export default function FormData({ borrador, volver, onDraftSaved }) {
             tipo_documento: data.tipo_documento ?? f.tipo_documento,
             numero_documento: data.numero_documento ?? f.numero_documento,
             direccion: data.direccion ?? f.direccion,
+            UPZ: data.UPZ ?? "",
             barrio: data.barrio ?? f.barrio,
             correo: data.correo ?? f.correo,
             numero_contacto: data.numero_contacto ?? f.numero_contacto,
@@ -143,6 +145,13 @@ export default function FormData({ borrador, volver, onDraftSaved }) {
         </div>
 
         <div className="Container2">
+          <div className="inputContainer">
+            <label className="block text-sm">UPZ</label>
+            <select name="UPZ" value={form.UPZ} onChange={handleChange} required className="w-full border rounded p-2">
+              <option value="LUCERO">LUCERO</option>
+              <option value="TESORO">TESORO</option>
+            </select>
+          </div>
           <div className="inputContainer">
           <label className="block text-sm">Barrio</label>
           <input name="barrio" value={form.barrio} onChange={handleChange} className="w-full border rounded p-2"/>

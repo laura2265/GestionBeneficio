@@ -47,9 +47,19 @@ export default function SupervisorDashboardV3({ classes = {} }) {
         res = await fetch(`${API_BASE}/api/applications?status=${encodeURIComponent(tab)}`, { headers });
       }
       const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) throw new Error(data?.message || "No se pudieron cargar las solicitudes");
       const list = Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : [];
-      const mapped = list.map((x) => ({
+      const toNum = (v) => (typeof v === 'bigint' ? Number(v) : Number(v ?? NaN));
+
+      const lists = list.filter((item) => {
+        // intenta varias claves posibles que puede traer el backend
+        const sid = item.supervisor_id ?? item.supervisorId ?? item.supervisor ?? item.asignado_a;
+        const sidNum = toNum(sid);
+        return !Number.isNaN(sidNum) && sidNum === Number(supervisorId);
+      });
+
+      const mapped = lists.map((x) => ({
         raw: x,
         id: Number(x.id || x.application_id || x.uid),
         nombre: x.nombre || `${x.nombres ?? ""} ${x.apellidos ?? ""}`.trim() || `Solicitud #${x.id}`,
@@ -57,6 +67,7 @@ export default function SupervisorDashboardV3({ classes = {} }) {
         fecha: (x.created_at || x.fecha || x.createdAt || "").toString().slice(0, 10),
         estado: x.estado || x.status || x.state || tab,
       }));
+
       setItems(mapped);
     } catch (e) {
       setError(e.message || "Error cargando");
@@ -365,6 +376,7 @@ const reject = async (row) => {
               <Field label="Correo" value={detail.correo} />
               <Field label="Teléfono" value={detail.numero_contacto} />
               <Field label="Estrato" value={detail.estrato_id} />
+              <Field label="UPZ" value={detail.UPZ} />
               <Field label="Declaración juramentada" value={String(detail.declaracion_juramentada)} />
               <Field label="Estado" value={detail.estado || detail.status || ""} />
               <Field label="Creado" value={(detail.created_at || "").toString().replace("T"," ").slice(0,19)} />

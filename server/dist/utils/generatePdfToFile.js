@@ -75,6 +75,7 @@ export function renderResolutionHtml(p) {
       ${field("Documento", p.data?.numero_documento)}
       ${field("Dirección", p.data?.direccion)}
       ${field("Barrio", p.data?.barrio)}
+      ${field("UPZ", p.data?.UPZ)}
       ${field("Correo", p.data?.correo)}
       ${field("Teléfono", p.data?.numero_contacto)}
       ${field("Estrato", p.data?.estrato_id)}

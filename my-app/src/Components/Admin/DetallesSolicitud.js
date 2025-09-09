@@ -143,6 +143,7 @@ export default function DetallesSolicitud({ id: idProp }) {
             <DataGrid rows={[
               ["Dirección", first(app.direccion, "-")],
               ["Barrio", first(app.barrio, "-")],
+              ["UPZ", first(app.UPZ, "-")],
               ["Estrato", first(app.estrato_id, "-")],
             ]}/>
           </div>

@@ -4,6 +4,8 @@ import fs from "fs/promises";
 import { Prisma } from "@prisma/client";
 import { prisma } from "../db.js";
 import { generateResolutionPdfFile } from "../utils/generatePdfToFile.js";
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library.js"
+
 
 export type CreatePdfInput = {
   application_id: string | number | bigint;
@@ -40,7 +42,7 @@ export class PdfsService{
         
       while (true) {
         try {
-          return await prisma.$transaction(async (tx) => {
+          return await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             // versión
             const agg = await tx.application_pdfs.aggregate({
               where: { application_id: applicationId },
@@ -85,7 +87,7 @@ export class PdfsService{
         } catch (e: any) {
           const isUnique =
             e?.code === "P2002" ||
-            (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002");
+            (e instanceof PrismaClientKnownRequestError  && e.code === "P2002");
           if (isUnique && attempt < MAX_RETRIES) { attempt++; continue; }
           throw e;
         }

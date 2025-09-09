@@ -71,7 +71,6 @@ static async list(req: AuthedRequest, res: Response, next: NextFunction) {
     }
   }
 
-
   // UPDATE: (opcional) solo si permites editar BORRADOR del técnico dueño
   static async update(req: AuthedRequest, res: Response, next: NextFunction) {
     try {

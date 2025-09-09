@@ -12,7 +12,7 @@ export const applicationCreateSchema = z.object({
     numero_contacto: z.string().optional(),
     estrato_id: z.number().int().optional(),
     declaracion_juramentada: z.boolean().default(false),
-    UPZ: z.string().min(2),
+    UPZ: z.string().min(2).optional(),
     tecnico_id: z.number().int().optional(),
     supervisor_id: z.number().int().optional(),
 });
@@ -75,7 +75,6 @@ export class ApplicationsService {
         const data = applicationCreateSchema.parse(payload);
         const tecnicoId = data.tecnico_id ?? currentUserId;
         return prisma.$transaction(async (tx) => {
-            // 1. Crear la aplicación
             const newApp = await prisma.applications.create({
                 data: {
                     nombres: data.nombres,
@@ -88,7 +87,7 @@ export class ApplicationsService {
                     numero_contacto: data.numero_contacto,
                     estrato_id: data.estrato_id,
                     declaracion_juramentada: data.declaracion_juramentada,
-                    ...(data.UPZ ? { UPZ: data.UPZ } : {}),
+                    UPZ: data.UPZ ?? "",
                     estado: "BORRADOR",
                     tecnico_id: BigInt(tecnicoId)
                 }
@@ -113,38 +112,45 @@ export class ApplicationsService {
     static async submit(appId, currentUserId) {
         await ensureRole(currentUserId, 'TECNICO');
         return prisma.$transaction(async (tx) => {
-            const app = await tx.applications.findUnique({ where: { id: BigInt(appId) } });
-            if (!app) {
-                throw { status: 404, message: "Aplicación no encontrada" };
-            }
-            if (app.tecnico_id !== BigInt(currentUserId)) {
-                throw { status: 403, message: `No puedes enviar una aplicacion de otro tecnico` };
-            }
-            if (app.estado !== "BORRADOR") {
-                throw { status: 400, message: `No puedes enviar desde estado  ${app.estado}` };
-            }
-            const updated = await tx.applications.update({
-                where: { id: app.id },
-                data: { estado: "ENVIADA", enviada_at: new Date() },
+            // 1) Cargar app y validar permisos/estado
+            const app = await tx.applications.findUnique({
+                where: { id: BigInt(appId) },
+                select: { id: true, estado: true, tecnico_id: true },
             });
+            if (!app)
+                throw { status: 404, message: 'Aplicación no encontrada' };
+            if (app.tecnico_id !== BigInt(currentUserId)) {
+                throw { status: 403, message: 'No puedes enviar una aplicación de otro técnico' };
+            }
+            if (app.estado !== 'BORRADOR') {
+                throw { status: 400, message: `No puedes enviar desde estado ${app.estado}` };
+            }
+            // 2) Verificar completitud ANTES de cambiar estado
             const complete = await ApplicationsService.isComplete(app.id, tx);
             if (!complete) {
                 throw { status: 400, message: 'Faltan documentos requeridos' };
             }
-            const supervisors = await tx.user_roles.findMany({
-                where: { roles: { is: { code: 'SUPERVISOR' } } },
+            const whereSupervisor = {
+                roles: { is: { code: 'SUPERVISOR' } },
+            };
+            const candidates = await tx.user_roles.findMany({
+                where: whereSupervisor,
                 select: { user_id: true },
             });
-            if (!supervisors.length) {
+            // Deduplicar user_id (por si un usuario tiene varias filas en user_roles)
+            const uniqueIds = Array.from(new Set(candidates.map(r => r.user_id.toString()))).map(s => BigInt(s));
+            if (uniqueIds.length === 0) {
                 throw { status: 409, message: 'No hay supervisores disponibles' };
             }
-            const pick = supervisors[Math.floor(Math.random() * supervisors.length)].user_id;
-            await tx.applications.update({
+            // 4) Elegir uno aleatorio
+            const supervisorId = uniqueIds[Math.floor(Math.random() * uniqueIds.length)];
+            // 5) ÚNICO update: estado + fecha + supervisor
+            const updated = await tx.applications.update({
                 where: { id: app.id },
                 data: {
                     estado: 'ENVIADA',
                     enviada_at: new Date(),
-                    supervisor_id: pick,
+                    supervisor_id: supervisorId,
                 },
             });
             return updated;

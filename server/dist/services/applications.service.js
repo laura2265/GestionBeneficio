@@ -137,14 +137,11 @@ export class ApplicationsService {
                 where: whereSupervisor,
                 select: { user_id: true },
             });
-            // Deduplicar user_id (por si un usuario tiene varias filas en user_roles)
             const uniqueIds = Array.from(new Set(candidates.map(r => r.user_id.toString()))).map(s => BigInt(s));
             if (uniqueIds.length === 0) {
                 throw { status: 409, message: 'No hay supervisores disponibles' };
             }
-            // 4) Elegir uno aleatorio
             const supervisorId = uniqueIds[Math.floor(Math.random() * uniqueIds.length)];
-            // 5) ÚNICO update: estado + fecha + supervisor
             const updated = await tx.applications.update({
                 where: { id: app.id },
                 data: {
@@ -156,7 +153,6 @@ export class ApplicationsService {
             return updated;
         });
     }
-    // Aprobar solicitud
     static async approve(appId, supervisorUserId, comment) {
         await ensureRole(supervisorUserId, "SUPERVISOR");
         return prisma.$transaction(async (tx) => {

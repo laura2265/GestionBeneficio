@@ -137,6 +137,7 @@ export class ApplicationsService {
                 where: whereSupervisor,
                 select: { user_id: true },
             });
+            console.log('datos: ', candidates);
             const uniqueIds = Array.from(new Set(candidates.map(r => r.user_id.toString()))).map(s => BigInt(s));
             if (uniqueIds.length === 0) {
                 throw { status: 409, message: 'No hay supervisores disponibles' };

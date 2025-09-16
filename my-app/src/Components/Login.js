@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './login.css'
 
 function Login() {
     const navigate = useNavigate();
@@ -33,7 +32,6 @@ function Login() {
         if (!resUsers.ok) throw new Error('Error al traer los usuarios');
         const { items = [] } = await resUsers.json();
 
-        // 2) Buscar usuario
         const user = items.find(u => u.email === formDataLogin.emailL && u.password === formDataLogin.passwordL);
 
         if (!user) {
@@ -75,24 +73,20 @@ function Login() {
       setIsSubmitLogin(true);
         
       if (Object.keys(errors).length === 0) {
-        // Si usas helpers:
-        // saveUserRol(UserRol); 
-        // saveUserId(UserId);
-    
+        localStorage.setItem('auth', JSON.stringify({
+          userId: UserId,
+          roleId: UserRol,
+          loggedAt: Date.now()
+        }));
+      
         switch (parseInt(UserRol)) {
           case 1: navigate('/admin'); break;
           case 2: navigate('/supervisor'); break;
           case 3: navigate('/tecnico'); break;
           default: console.log('Rol del usuario no reconocido'); break;
         }
-        localStorage.setItem('auth', JSON.stringify({
-          userId: UserId,
-          roleId: UserRol,     
-          loggedAt: Date.now() 
-        }));
       }
     };
-
 
     return(
         <>

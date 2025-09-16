@@ -7,26 +7,46 @@ import DashboardSupervisor from './Components/Supervisor/DashboardSupervisor.js'
 import DashboardTecnico from './Components/Tecnico/DashboardTecnico.js';
 import RequireAuth from './Components/RequireAuth.js';
 import DetallesSolicitud from './Components/Admin/DetallesSolicitud.js';
+import { PrivateRouter } from './Components/PrivateRouter/PrivateRouter.js';
 
-function App() {
+function App() {  
   return (
     <Router>
       <Routes>
+        {/*Rutas publicas */}
         <Route path='/' element={<Login />} />
-        <Route element={<RequireAuth/>}>
+
 
           //Admin
-          <Route path='/admin' element={<DashboardAdmin/>}/>
-          <Route path='/detalle-admin/:id' element={<DetallesSolicitud />}/>
+          <Route path='/admin' element={
+            <PrivateRouter allowedRoles={[1]}>
+              <DashboardAdmin />
+            </PrivateRouter>
+          }/>
+          <Route path='/detalle-admin/:id' element={
+            <PrivateRouter allowedRoles={[1]}>
+              <DetallesSolicitud/>
+            </PrivateRouter>
+          }/>
 
           //supervisor
-          <Route path='/supervisor' element={<DashboardSupervisor />} />
+          <Route path='/supervisor' element={
+            <PrivateRouter allowedRoles={[2]}>
+              <DashboardSupervisor/>
+            </PrivateRouter>
+          } />
 
           //Tecnico
-          <Route path='/tecnico' element={<DashboardTecnico/>} />
-          <Route path='/form-tecnico' element={<FormData />} />
-        </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path='/tecnico' element={
+            <PrivateRouter allowedRoles={[3]}>
+              <DashboardTecnico/>
+            </PrivateRouter>
+          } />
+          <Route path='/form-tecnico' element={
+            <PrivateRouter allowedRoles={[3]}>
+              <FormData/>
+            </PrivateRouter>
+          } />
       </Routes>
     </Router>
   );

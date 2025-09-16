@@ -58,7 +58,7 @@ body {
   transform: translateY(30%);
   padding: 0 5px;
   font-size: 16px;
-  color: #868686;
+  color: #868686; 
   pointer-events: none;
   transition: all 0.3s ease;
 }
@@ -80,7 +80,8 @@ body {
   border-radius: 4px;
   cursor: pointer;
   transition: 0.3s;
-  margin-left: 90px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .FormLogin .InputButton1:hover {
@@ -88,7 +89,6 @@ body {
   background-color: rgb(203, 203, 203);
 }
 
-/*Error de datos */
 .error {
   margin-top: -12px;
   margin-bottom: 32px;

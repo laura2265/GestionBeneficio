@@ -76,3 +76,18 @@
   }
   .table.responsive td.actions{ padding-top:8px; }
 }
+
+.viewer-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+a{
+  text-decoration: none;
+}
+
+.mensaje{
+  color: #757575;
+}

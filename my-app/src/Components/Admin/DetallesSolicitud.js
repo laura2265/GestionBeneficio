@@ -35,7 +35,11 @@ export default function DetallesSolicitud({ id: idProp }) {
   const pdfAdjuntos = useMemo(
     () => files.filter(f =>
       String(f.mime_type || "").toLowerCase() === "application/pdf" ||
-      String(f.file_name || "").toLowerCase().endsWith(".pdf")
+      String(f.file_name || "").toLowerCase().endsWith(".pdf")||
+      String(f.file_name || "").toLowerCase().endsWith(".png")||
+      String(f.file_name || "").toLowerCase().endsWith(".jpg")||
+      String(f.file_name || "").toLowerCase().endsWith(".avif")||
+      String(f.file_name || "").toLowerCase().endsWith(".jpeg")
     ),
     [files]
   );
@@ -193,20 +197,24 @@ export default function DetallesSolicitud({ id: idProp }) {
                     <tr><th>Nombre</th><th>Tipo</th><th>Acciones</th></tr>
                   </thead>
                   <tbody>
-                    {pdfAdjuntos.length === 0 ? (
-                      <tr><td colSpan="3" className="muted">No hay PDFs adjuntos</td></tr>
-                    ) : pdfAdjuntos.map((p) => {
+                    {pdfAdjuntos.map((p) => {
                       const href = absolutize(p.url);
                       return (
                         <tr key={p.id}>
                           <td data-label="Nombre">{p.file_name}</td>
                           <td data-label="Tipo">{p.kind || p.mime_type || "application/pdf"}</td>
                           <td className="actions actions-col" data-label="Acciones">
-                            <button className="btn small secondary" onClick={() => setPreview(p)}>Ver</button>
+                            <button
+                              className="btn small secondary"
+                              onClick={() => setPreview(p)}
+                            >
+                              Ver
+                            </button>
                           </td>
                         </tr>
                       );
                     })}
+
                   </tbody>
                 </table>
               </div>
@@ -220,15 +228,40 @@ export default function DetallesSolicitud({ id: idProp }) {
               <div className="muted">Selecciona un archivo o PDF</div>
             ) : (
               <div className="pdf-viewer">
+                <div className="viewer-actions">
+                  <a
+                    className="btn small"
+                    href={absolutize(preview.url)}
+                    download={preview.file_name || "archivo"}
+                  >
+                    Descargar
+                  </a>
+            
+                  <a
+                    className="btn small secondary"
+                    href={absolutize(preview.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Abrir
+                  </a>
+                </div>
+            
+                {/* Contenido del visor */}
                 {String(preview.mime_type || "").startsWith("image/") ? (
-                  <img alt={preview.file_name} src={absolutize(preview.url)} style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                  <img
+                    alt={preview.file_name}
+                    src={absolutize(preview.url)}
+                    style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                  />
                 ) : (
-                  <iframe title={preview.file_name} src={absolutize(preview.url)} />
+                  <p className="mensaje">Selecciona un archivo o PDF</p>
                 )}
               </div>
             )}
           </div>
         </aside>
+
       </div>
     </div>
   );

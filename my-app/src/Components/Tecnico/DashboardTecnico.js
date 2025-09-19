@@ -90,7 +90,7 @@ export default function DashboardTecnico() {
 
   const cerrarSesion = () => {
     localStorage.removeItem("auth");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
 

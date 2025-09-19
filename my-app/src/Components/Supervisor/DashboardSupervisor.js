@@ -302,7 +302,7 @@ const reject = async (row) => {
     };
   const cerrarSesion = () => {
     localStorage.removeItem("auth");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
 
   const onPreview = (f) => setPreviewFile(f);

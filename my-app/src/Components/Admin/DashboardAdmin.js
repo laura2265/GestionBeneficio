@@ -164,34 +164,18 @@ const navigate = useNavigate();
     return { ...counts, totalApps };
   }, [allApps]);
 
-  // En la tabla de "Últimas solicitudes", usa allApps (y ya no applications):
   {allApps.slice(0,10).map((a) => (
     <tr key={a.id}> ... </tr>
   ))}
 
 
-  const perUserRows = useMemo(() => {
-    return users.map((u) => {
-      const apps = appsByUser[u.id] || [];
-      const row = { user: u, total: apps.length, BORRADOR: 0, ENVIADA: 0, APROBADA: 0, RECHAZADA: 0 };
-      apps.forEach((a) => {
-        const st = NORMALIZE(a.estado || a.status);
-        if (row[st] !== undefined) row[st]++;
-      });
-      return row;
-    });
-  }, [users, appsByUser]);
-
-
-  //Historial de tareas
-  // debajo de tus useState(...)
 const usersById = useMemo(
   () => Object.fromEntries((users || []).map(u => [u.id, u])),
   [users]
 );
 
 useEffect(() => {
-  if (!users.length) return; // esperamos a tener usuarios
+  if (!users.length) return; 
   let alive = true;
   (async () => {
     try {
@@ -246,7 +230,7 @@ useEffect(() => {
 
  const cerrarSesion = () => {
     localStorage.removeItem("auth");
-    window.location.href = "/login";
+    window.location.href = "/";
   };
   return (
   <div className="dashboard-container">

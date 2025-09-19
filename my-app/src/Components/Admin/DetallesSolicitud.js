@@ -43,6 +43,7 @@ export default function DetallesSolicitud({ id: idProp }) {
     ),
     [files]
   );
+
   useEffect(() => {
     let alive = true;
     (async () => {

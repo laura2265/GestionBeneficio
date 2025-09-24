@@ -2,7 +2,6 @@ import { prisma } from "../db.js";
 import z from "zod";
 import { ensureRole, hasRole } from "./rbac.service.js";
 import { PrismaClient, Prisma } from "@prisma/client";
-import { FileKind } from "../domain/file_kind.js";
 
 export const applicationCreateSchema = z.object({
   nombres: z.string().min(2),
